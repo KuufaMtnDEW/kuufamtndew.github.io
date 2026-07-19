@@ -230,10 +230,12 @@ main{
   white-space:nowrap;
   animation:railScroll 26s linear infinite;
 }
-.rail--right .rail__track{ animation-direction:reverse; }
+/* both rails now scroll the same way (bottom -> top); the track's actual
+   content is expanded and doubled in script.js (initRails), so a 50%
+   shift always lands on an identical repeat — no visible seam/jump */
 @keyframes railScroll{
-  0%{ transform:translateY(-50%); }
-  100%{ transform:translateY(0%); }
+  0%{ transform:translateY(0%); }
+  100%{ transform:translateY(-50%); }
 }
 @media (min-width:1400px){
   .rail{ display:flex; }

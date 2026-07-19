@@ -43,8 +43,10 @@
 
     function tick() {
       requestAnimationFrame(tick);
-      const idle = audio.paused || audio.muted || audio.volume === 0;
-      if (!analyser || idle) { audioReactive.level = 0; return; }
+      // only a genuinely paused/stopped track counts as "idle" — muting or
+      // pulling the volume down should still let the background sparkle,
+      // since the track is still conceptually "playing"
+      if (!analyser || audio.paused) { audioReactive.level = 0; return; }
       analyser.getByteFrequencyData(dataArray);
       let sum = 0;
       const bassBins = Math.min(10, dataArray.length);
@@ -53,7 +55,16 @@
       // auto-gain: track a slowly-decaying peak so the sparkle reacts to the
       // music's own dynamics, not to the (quiet) absolute volume setting
       runningPeak = Math.max(avg, runningPeak * 0.992);
-      audioReactive.level = runningPeak > 4 ? Math.min(1, avg / runningPeak) : 0;
+      let level = runningPeak > 4 ? Math.min(1, avg / runningPeak) : 0;
+
+      // safety net: some browsers zero the analyser data itself once the
+      // element is muted, not just its audible output — in that case fall
+      // back to a gentle synthetic drift so the sparkle never fully dies
+      if (audio.muted || audio.volume === 0) {
+        const drift = 0.18 + 0.12 * Math.sin(performance.now() / 2200);
+        level = Math.max(level, drift);
+      }
+      audioReactive.level = level;
     }
 
     function resumeOnGesture() {
@@ -438,6 +449,22 @@
     setupAudioReactivity(audio);
   }
 
+  // ---- decorative side rails: make the marquee text long enough that it
+  // never runs out mid-scroll (which is what caused the "jump back to
+  // start" look), by repeating it and duplicating that into two identical
+  // halves — a translateY(-50%) loop always lands on an identical repeat,
+  // so the animation reads as one continuous scroll with no visible seam ----
+  function initRails() {
+    document.querySelectorAll('.rail__track').forEach((track) => {
+      if (track.dataset.expanded) return; // rails live outside <main>, so this only needs to run once
+      const unit = track.textContent.trim() + ' ';
+      // 14 repeats comfortably outlasts even very tall/ultrawide viewports
+      const half = unit.repeat(14);
+      track.textContent = half + half;
+      track.dataset.expanded = '1';
+    });
+  }
+
   // ---- scrollbar color: green at the top of the page, fading to magenta at the bottom ----
   let updateScrollColor = null;
   function initScrollColor() {
@@ -532,6 +559,7 @@
   }
 
   // ---- boot ----
+  initRails();
   initParticles();
   initBgm();
   initScrollColor();
