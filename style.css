@@ -492,13 +492,43 @@ main{
 }
 .card__body{ padding:18px; }
 
-/* photo-only cards (real images, no captions) */
-.card--photo{ line-height:0; }
+/* photo-only cards (real images, no captions) — framed, numbered, subtle zoom on hover */
+.card--photo{
+  padding:10px;
+  border-radius:10px;
+}
+.card--photo:hover{
+  transform:translateY(-6px) scale(1.01);
+}
+.card__thumb-frame{
+  position:relative;
+  overflow:hidden;
+  border-radius:6px;
+  aspect-ratio:1/1;
+}
 .card__thumb-img{
   display:block;
   width:100%;
-  aspect-ratio:4/5;
+  height:100%;
   object-fit:cover;
+  transition:transform .5s ease;
+}
+.card--photo:hover .card__thumb-img{
+  transform:scale(1.06);
+}
+.card__index{
+  position:absolute;
+  top:12px;
+  left:12px;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:11px;
+  letter-spacing:0.08em;
+  color:var(--text);
+  background:rgba(16,21,21,0.6);
+  backdrop-filter:blur(6px);
+  border:1px solid rgba(255,255,255,0.14);
+  border-radius:20px;
+  padding:4px 10px;
 }
 .card__title{
   font-family:'Space Grotesk', sans-serif;
@@ -535,13 +565,7 @@ main{
   padding:24px 6vw;
 }
 .tiktok-slide__inner{ width:100%; max-width:780px; }
-.tiktok-slide__inner--placeholder{
-  text-align:center;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-}
-.tiktok-slide--placeholder{
+.tiktok-slide--profile{
   border-top:1px solid var(--border);
 }
 
