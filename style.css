@@ -49,56 +49,15 @@ h1,h2,h3{
 
 a{ color:inherit; text-decoration:none; }
 
-/* ---------- layered animated backdrop ---------- */
+/* ---------- static backdrop (no blur/animation — kept cheap for FPS) ---------- */
 .backdrop{
   position:fixed;
   inset:0;
   z-index:-5;
   background:
-    radial-gradient(ellipse at 20% 0%, #26312f 0%, transparent 55%),
+    radial-gradient(ellipse 60% 45% at 18% 0%, rgba(184,255,61,0.10), transparent 60%),
+    radial-gradient(ellipse 60% 45% at 85% 100%, rgba(255,59,141,0.10), transparent 60%),
     var(--bg-base);
-  overflow:hidden;
-}
-.backdrop::before,
-.backdrop::after{
-  content:"";
-  position:absolute;
-  width:75vmax;
-  height:75vmax;
-  border-radius:50%;
-  filter:blur(80px);
-  opacity:0.45;
-}
-.backdrop::before{
-  background:radial-gradient(circle at 30% 30%, var(--accent), transparent 70%);
-  top:-25%;
-  left:-18%;
-  animation:drift1 24s ease-in-out infinite alternate;
-}
-.backdrop::after{
-  background:radial-gradient(circle at 70% 70%, var(--glitch), transparent 70%);
-  bottom:-28%;
-  right:-18%;
-  animation:drift2 20s ease-in-out infinite alternate;
-}
-@keyframes drift1{
-  0%{ transform:translate(0,0) scale(1); }
-  100%{ transform:translate(10vw,12vh) scale(1.2); }
-}
-@keyframes drift2{
-  0%{ transform:translate(0,0) scale(1); }
-  100%{ transform:translate(-8vw,-10vh) scale(1.15); }
-}
-
-/* cursor-tracking spotlight — updated live via --mx / --my */
-.backdrop__spot{
-  position:fixed;
-  inset:0;
-  z-index:-4;
-  pointer-events:none;
-  background:radial-gradient(420px circle at var(--mx) var(--my), rgba(184,255,61,0.16), transparent 65%);
-  transition:background 90ms linear;
-  mix-blend-mode:screen;
 }
 
 /* particle-trail canvas, driven by script.js */
@@ -200,7 +159,7 @@ a{ color:inherit; text-decoration:none; }
 main{
   max-width:960px;
   margin:0 auto;
-  padding:0 6vw;
+  padding:0 6vw 76px; /* clears the fixed footer */
 }
 
 .eyebrow{
@@ -218,20 +177,22 @@ main{
 /* ---------- pinned two-scene hero ---------- */
 .hero-pin{
   position:relative;
-  height:230vh;
+  height:150vh; /* shorter = faster scroll through the crossfade */
 }
 .hero-stage{
   position:sticky;
   top:0;
   height:100vh;
-  display:flex;
-  align-items:center;
   overflow:hidden;
 }
 .scene{
   position:absolute;
+  top:50%;
   left:0;
   right:0;
+  transform:translateY(-50%);
+  display:flex;
+  flex-direction:column;
   will-change:opacity, transform;
 }
 .scene-2{ opacity:0; }
@@ -305,14 +266,14 @@ main{
 }
 .scene-2 .hero__links{ margin-top:34px; }
 
-/* buttons — sized up ~20% over the original spec */
+/* buttons — sized up ~30% over the original spec (20% + a further 10%) */
 .btn{
   display:inline-flex;
   align-items:center;
-  gap:8px;
-  padding:17px 29px;
+  gap:9px;
+  padding:19px 32px;
   border-radius:var(--radius);
-  font-size:16px;
+  font-size:18px;
   text-transform:uppercase;
   letter-spacing:0.08em;
   border:1px solid var(--border);
@@ -479,10 +440,14 @@ main{
   color:var(--muted);
 }
 
-/* ---------- footer ---------- */
+/* ---------- footer — pinned to the bottom of the viewport, always visible ---------- */
 footer{
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
   border-top:1px solid var(--border);
-  padding:30px 6vw 40px;
+  padding:16px 6vw;
   display:flex;
   align-items:center;
   justify-content:space-between;
@@ -490,9 +455,9 @@ footer{
   gap:14px;
   font-size:12px;
   color:var(--muted);
-  position:relative;
-  z-index:1;
-  background:var(--bg-base);
+  z-index:15;
+  background:rgba(16,21,21,0.88);
+  backdrop-filter:blur(10px);
 }
 .footer__socials{
   display:flex;
@@ -514,17 +479,16 @@ footer{
 
 @media (max-width:640px){
   .nav__links{ gap:16px; font-size:11px; }
-  .hero-pin{ height:200vh; }
-  .btn{ padding:15px 24px; font-size:14px; }
-  footer{ flex-direction:column; align-items:flex-start; }
+  .hero-pin{ height:140vh; }
+  .btn{ padding:17px 26px; font-size:16px; }
+  footer{ flex-direction:column; align-items:flex-start; padding:14px 6vw; }
+  main{ padding-bottom:110px; }
 }
 
 @media (prefers-reduced-motion: reduce){
-  .backdrop::before,
-  .backdrop::after,
   .glitch::before,
   .glitch::after,
   .nav__brand-mark{ animation:none; }
-  .scene{ opacity:1 !important; transform:none !important; }
-  .scene-2{ position:relative; margin-top:40px; }
+  .scene{ position:relative; top:auto; opacity:1 !important; transform:none !important; }
+  .scene-2{ margin-top:40px; }
 }
