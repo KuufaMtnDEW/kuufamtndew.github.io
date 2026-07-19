@@ -1,100 +1,42 @@
 // ============================================================
-// KUUFA — shared behaviour: nav state, particle trail,
-// looping glitch flicker, pinned hero crossfade
+// KUUFA — shared behaviour: SPA-style nav (audio survives page
+// changes), particle trail, glitch flicker, pinned hero crossfade,
+// custom video player, sitewide background music + equalizer
 // ============================================================
 
 (function () {
-  // ---- active nav link ----
-  const page = document.body.dataset.page;
-  if (page) {
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // cleanup handle for the hero-pin scroll listener, so re-mounting
+  // a new page after a pjax navigation doesn't stack duplicate listeners
+  let unmountHeroPin = null;
+
+  // ------------------------------------------------------------
+  // per-page setup — re-run every time <main>/<nav> get swapped
+  // ------------------------------------------------------------
+  function mountPage() {
+    setActiveNavLink();
+    initHeroPin();
+    initVideoPlayers();
+  }
+
+  function setActiveNavLink() {
+    const page = document.body.dataset.page;
+    if (!page) return;
     const link = document.querySelector(`.nav__links a[data-page="${page}"]`);
     if (link) link.setAttribute('aria-current', 'page');
   }
 
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  // ---- lightweight particle trail canvas ----
-  const canvas = document.getElementById('fx');
-  if (canvas && !reduceMotion) {
-    const ctx = canvas.getContext('2d');
-    let w, h, dpr;
-    function resize() {
-      dpr = Math.min(window.devicePixelRatio || 1, 1.5); // capped for performance
-      w = canvas.width = window.innerWidth * dpr;
-      h = canvas.height = window.innerHeight * dpr;
-      canvas.style.width = window.innerWidth + 'px';
-      canvas.style.height = window.innerHeight + 'px';
-    }
-    resize();
-    window.addEventListener('resize', resize);
-
-    const colors = ['#B8FF3D', '#FF3B8D'];
-    const MAX_PARTICLES = 140; // capped so it never becomes an FPS drain
-    let particles = [];
-    let lastSpawn = 0;
-
-    function spawn(x, y, count) {
-      for (let i = 0; i < count; i++) {
-        particles.push({
-          x: x * dpr,
-          y: y * dpr,
-          vx: (Math.random() - 0.5) * 1.2 * dpr,
-          vy: (Math.random() - 1.1) * 1.2 * dpr,
-          r: (Math.random() * 2 + 1) * dpr,
-          life: 1,
-          decay: 0.018 + Math.random() * 0.014,
-          color: colors[Math.floor(Math.random() * colors.length)],
-        });
-      }
-      if (particles.length > MAX_PARTICLES) particles = particles.slice(-MAX_PARTICLES);
-    }
-
-    function pointerSpawn(cx, cy) {
-      const now = performance.now();
-      if (now - lastSpawn < 40) return; // throttle spawn rate
-      lastSpawn = now;
-      spawn(cx, cy, 1);
-    }
-
-    window.addEventListener('mousemove', (e) => pointerSpawn(e.clientX, e.clientY), { passive: true });
-    window.addEventListener('touchmove', (e) => {
-      if (!e.touches.length) return;
-      pointerSpawn(e.touches[0].clientX, e.touches[0].clientY);
-    }, { passive: true });
-
-    // gentle ambient particles so the background feels alive at rest
-    setInterval(() => spawn(Math.random() * window.innerWidth, window.innerHeight + 10, 1), 900);
-
-    function tick() {
-      ctx.clearRect(0, 0, w, h);
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy -= 0.01 * dpr;
-        p.life -= p.decay;
-        if (p.life <= 0) { particles.splice(i, 1); continue; }
-        ctx.globalAlpha = p.life * 0.8;
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-      requestAnimationFrame(tick);
-    }
-    requestAnimationFrame(tick);
-  }
-
-  // ---- glitch on .glitch title now runs entirely via CSS (continuous loop) ----
-
   // ---- pinned hero: crossfade scene-1 -> scene-2 while scrolling ----
-  const heroPin = document.querySelector('.hero-pin');
-  const scene1 = document.querySelector('.scene-1');
-  const scene2 = document.querySelector('.scene-2');
-  const scrollHint = document.querySelector('.scroll-hint');
+  function initHeroPin() {
+    if (unmountHeroPin) { unmountHeroPin(); unmountHeroPin = null; }
 
-  if (heroPin && scene1 && scene2) {
+    const heroPin = document.querySelector('.hero-pin');
+    const scene1 = document.querySelector('.scene-1');
+    const scene2 = document.querySelector('.scene-2');
+    const scrollHint = document.querySelector('.scroll-hint');
+    if (!heroPin || !scene1 || !scene2) return;
+
     function clamp01(v) { return Math.min(Math.max(v, 0), 1); }
 
     function update() {
@@ -102,13 +44,9 @@
       const rect = heroPin.getBoundingClientRect();
       const scrolled = clamp01(total > 0 ? -rect.top / total : 0);
 
-      // scene 1 fades out across the first 55% of the pin range
       const p1 = clamp01(scrolled / 0.55);
-      // scene 2 fades in across the last 55% (short overlap in the middle)
       const p2 = clamp01((scrolled - 0.45) / 0.55);
 
-      // base translateY(-50%) keeps each scene vertically centred;
-      // the extra offset is layered on top via calc()
       scene1.style.opacity = String(1 - p1);
       scene1.style.transform = `translateY(calc(-50% - ${p1 * 30}px))`;
 
@@ -121,11 +59,18 @@
     update();
     window.addEventListener('scroll', update, { passive: true });
     window.addEventListener('resize', update);
+
+    unmountHeroPin = () => {
+      window.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
   }
 
   // ---- custom video player (own-hosted mp4s, no third-party embeds) ----
-  const players = document.querySelectorAll('.vplayer');
-  if (players.length) {
+  function initVideoPlayers() {
+    const players = document.querySelectorAll('.vplayer');
+    if (!players.length) return;
+
     const ICON_PLAY = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
     const ICON_PAUSE = '<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
     const ICON_VOL = '<svg viewBox="0 0 24 24"><path d="M3 10v4h4l5 5V5L7 10H3zm13.5 2a4.5 4.5 0 0 0-2.5-4.03v8.06A4.5 4.5 0 0 0 16.5 12z"/></svg>';
@@ -159,13 +104,9 @@
 
       video.addEventListener('error', () => wrap.classList.add('has-error'));
 
-      // match the player frame to the real aspect ratio of the file
-      // (falls back to the 16:9 default in CSS if metadata never loads)
       video.addEventListener('loadedmetadata', () => {
         if (video.videoWidth && video.videoHeight) {
           wrap.style.aspectRatio = `${video.videoWidth} / ${video.videoHeight}`;
-          // portrait/square clips would otherwise inherit the 420px width cap
-          // and end up very tall — cap by height too and let width follow
           const MAX_W = 520, MAX_H = 640;
           const ratio = video.videoWidth / video.videoHeight;
           let w = Math.min(MAX_W, MAX_H * ratio);
@@ -245,11 +186,91 @@
     });
   }
 
-  // ---- sitewide background music (persists mute/volume/position via localStorage) ----
-  (function initBgm() {
+  // ------------------------------------------------------------
+  // page-independent features — set up once, survive navigation
+  // ------------------------------------------------------------
+
+  // ---- lightweight particle trail canvas (kept deliberately subtle) ----
+  function initParticles() {
+    const canvas = document.getElementById('fx');
+    if (!canvas || reduceMotion) return;
+
+    const ctx = canvas.getContext('2d');
+    let w, h, dpr;
+    function resize() {
+      dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      w = canvas.width = window.innerWidth * dpr;
+      h = canvas.height = window.innerHeight * dpr;
+      canvas.style.width = window.innerWidth + 'px';
+      canvas.style.height = window.innerHeight + 'px';
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    const colors = ['#B8FF3D', '#FF3B8D'];
+    const MAX_PARTICLES = 70; // trimmed down — kept light so the equalizer can carry the visual interest
+    let particles = [];
+    let lastSpawn = 0;
+
+    function spawn(x, y, count) {
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x: x * dpr,
+          y: y * dpr,
+          vx: (Math.random() - 0.5) * 1.1 * dpr,
+          vy: (Math.random() - 1.1) * 1.1 * dpr,
+          r: (Math.random() * 1.6 + 0.8) * dpr,
+          life: 1,
+          decay: 0.022 + Math.random() * 0.016,
+          color: colors[Math.floor(Math.random() * colors.length)],
+        });
+      }
+      if (particles.length > MAX_PARTICLES) particles = particles.slice(-MAX_PARTICLES);
+    }
+
+    function pointerSpawn(cx, cy) {
+      const now = performance.now();
+      if (now - lastSpawn < 75) return; // throttled harder than before
+      lastSpawn = now;
+      spawn(cx, cy, 1);
+    }
+
+    window.addEventListener('mousemove', (e) => pointerSpawn(e.clientX, e.clientY), { passive: true });
+    window.addEventListener('touchmove', (e) => {
+      if (!e.touches.length) return;
+      pointerSpawn(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: true });
+
+    // sparse ambient drift so the background still feels alive at rest
+    setInterval(() => spawn(Math.random() * window.innerWidth, window.innerHeight + 10, 1), 1700);
+
+    function tick() {
+      ctx.clearRect(0, 0, w, h);
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy -= 0.01 * dpr;
+        p.life -= p.decay;
+        if (p.life <= 0) { particles.splice(i, 1); continue; }
+        ctx.globalAlpha = p.life * 0.55;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  // ---- sitewide background music (persists mute/volume/position via localStorage)
+  //      + a small equalizer readout driven by the Web Audio API ----
+  function initBgm() {
     const AUDIO_SRC = 'audio/background.mp3';
     const KEY_MUTED = 'kuufa-bgm-muted-v2';
-    const KEY_VOLUME = 'kuufa-bgm-volume-v2';
+    const KEY_VOLUME = 'kuufa-bgm-volume-v3';
     const KEY_TIME = 'kuufa-bgm-time';
 
     const ICON_ON = '<svg viewBox="0 0 24 24"><path d="M3 10v4h4l5 5V5L7 10H3zm13.5 2a4.5 4.5 0 0 0-2.5-4.03v8.06A4.5 4.5 0 0 0 16.5 12zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>';
@@ -262,11 +283,12 @@
       audio.src = AUDIO_SRC;
       audio.loop = true;
       audio.preload = 'auto';
+      audio.crossOrigin = 'anonymous'; // needed so Web Audio can analyse same-origin audio safely
       document.body.appendChild(audio);
     }
 
     let storedMuted = false;
-    let storedVolume = 0.15;
+    let storedVolume = 0.07; // quieter default than before
     let storedTime = 0;
     try {
       storedMuted = localStorage.getItem(KEY_MUTED) === '1';
@@ -287,7 +309,6 @@
 
     function attemptPlay() {
       audio.play().catch(() => {
-        // autoplay blocked — start on first user interaction instead
         const startOnGesture = () => {
           audio.play().catch(() => {});
           document.removeEventListener('click', startOnGesture);
@@ -305,17 +326,22 @@
       }
     }, 3000);
 
-    // ---- floating widget ----
-    const widget = document.createElement('div');
-    widget.className = 'bgm-widget';
-    widget.innerHTML = `
-      <button class="bgm-widget__btn" data-bgm-toggle aria-label="Звук фоновой музыки"></button>
-      <input class="bgm-widget__volume" type="range" min="0" max="1" step="0.05" data-bgm-volume>
-    `;
-    document.body.appendChild(widget);
+    // ---- floating widget: mute button, volume slider, tiny equalizer ----
+    let widget = document.querySelector('.bgm-widget');
+    if (!widget) {
+      widget = document.createElement('div');
+      widget.className = 'bgm-widget';
+      widget.innerHTML = `
+        <div class="bgm-widget__eq" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+        <button class="bgm-widget__btn" data-bgm-toggle aria-label="Звук фоновой музыки"></button>
+        <input class="bgm-widget__volume" type="range" min="0" max="1" step="0.05" data-bgm-volume>
+      `;
+      document.body.appendChild(widget);
+    }
 
     const toggleBtn = widget.querySelector('[data-bgm-toggle]');
     const volumeSlider = widget.querySelector('[data-bgm-volume]');
+    const eqBars = widget.querySelectorAll('.bgm-widget__eq span');
     volumeSlider.value = String(storedVolume);
 
     function syncWidget() {
@@ -341,5 +367,125 @@
 
     audio.addEventListener('play', syncWidget);
     audio.addEventListener('pause', syncWidget);
-  })();
+
+    // ---- tiny audio-reactive equalizer, subtle by design ----
+    if (!reduceMotion && eqBars.length) {
+      let analyser, dataArray, audioCtx, started = false;
+
+      function setupAnalyser() {
+        if (started) return;
+        started = true;
+        try {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const source = audioCtx.createMediaElementSource(audio);
+          analyser = audioCtx.createAnalyser();
+          analyser.fftSize = 32;
+          analyser.smoothingTimeConstant = 0.75;
+          dataArray = new Uint8Array(analyser.frequencyBinCount);
+          source.connect(analyser);
+          analyser.connect(audioCtx.destination);
+          requestAnimationFrame(tick);
+        } catch (e) {
+          // Web Audio unavailable (e.g. blocked by browser policy) — bars just stay idle, no big deal
+        }
+      }
+
+      function tick() {
+        requestAnimationFrame(tick);
+        const idle = audio.paused || audio.muted || audio.volume === 0;
+        if (analyser && !idle) analyser.getByteFrequencyData(dataArray);
+        eqBars.forEach((bar, i) => {
+          const raw = analyser && !idle ? dataArray[i * 2 + 1] || 0 : 0;
+          const scale = idle ? 0.12 : Math.min(1, Math.max(0.12, raw / 200));
+          bar.style.transform = `scaleY(${scale.toFixed(2)})`;
+        });
+      }
+
+      // Web Audio needs a user gesture before it can start/resume
+      function resumeOnGesture() {
+        setupAnalyser();
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        document.removeEventListener('click', resumeOnGesture);
+        document.removeEventListener('keydown', resumeOnGesture);
+      }
+      document.addEventListener('click', resumeOnGesture);
+      document.addEventListener('keydown', resumeOnGesture);
+      audio.addEventListener('play', resumeOnGesture);
+    }
+  }
+
+  // ------------------------------------------------------------
+  // SPA-style navigation: swaps <main>/<nav> via fetch instead of
+  // a full page reload, so the <audio> element (and its playback
+  // position) is never destroyed when moving between pages
+  // ------------------------------------------------------------
+  function initPjaxNav() {
+    function currentFile() {
+      const path = window.location.pathname;
+      const file = path.substring(path.lastIndexOf('/') + 1);
+      return file || 'index.html';
+    }
+
+    function isInternalHtmlLink(a) {
+      if (!a || !a.getAttribute) return false;
+      const href = a.getAttribute('href');
+      if (!href) return false;
+      if (href.startsWith('http') || href.startsWith('mailto:') || href.startsWith('#')) return false;
+      if (a.target === '_blank') return false;
+      return href.endsWith('.html');
+    }
+
+    async function loadPage(url, push) {
+      try {
+        const res = await fetch(url, { credentials: 'same-origin' });
+        if (!res.ok) throw new Error('fetch failed: ' + res.status);
+        const html = await res.text();
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+
+        const newMain = doc.querySelector('main');
+        const newNav = doc.querySelector('nav.nav');
+        const newTitle = doc.querySelector('title');
+        if (!newMain) { window.location.href = url; return; }
+
+        document.title = newTitle ? newTitle.textContent : document.title;
+        document.body.dataset.page = doc.body.dataset.page || '';
+
+        const currentMain = document.querySelector('main');
+        if (currentMain) currentMain.replaceWith(newMain);
+
+        const currentNav = document.querySelector('nav.nav');
+        if (newNav && currentNav) currentNav.replaceWith(newNav);
+
+        if (push) history.pushState({ pjax: true }, '', url);
+
+        window.scrollTo({ top: 0, behavior: 'auto' });
+        mountPage();
+      } catch (err) {
+        // network hiccup or non-html response — fall back to a real navigation
+        window.location.href = url;
+      }
+    }
+
+    document.addEventListener('click', (e) => {
+      const a = e.target.closest('a');
+      if (!a || !isInternalHtmlLink(a)) return;
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+      const href = a.getAttribute('href');
+      e.preventDefault();
+      if (href === currentFile()) return; // already on this page
+      loadPage(href, true);
+    });
+
+    window.addEventListener('popstate', () => {
+      loadPage(currentFile(), false);
+    });
+
+    history.replaceState({ pjax: true }, '', window.location.href);
+  }
+
+  // ---- boot ----
+  initParticles();
+  initBgm();
+  initPjaxNav();
+  mountPage();
 })();

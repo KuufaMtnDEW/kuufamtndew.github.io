@@ -160,6 +160,7 @@ main{
   max-width:1180px;
   margin:0 auto;
   padding:0 6vw 76px; /* clears the fixed footer */
+  text-align:center;
 }
 
 /* decorative vertical rails — fill the empty gutters on wide screens */
@@ -259,6 +260,7 @@ main{
   transform:translateY(-50%);
   display:flex;
   flex-direction:column;
+  align-items:center;
   will-change:opacity, transform;
 }
 .scene-2{ opacity:0; }
@@ -316,6 +318,7 @@ main{
   display:flex;
   flex-wrap:wrap;
   gap:10px;
+  justify-content:center;
 }
 .chip{
   font-size:13px;
@@ -332,6 +335,7 @@ main{
   flex-wrap:wrap;
   gap:18px;
   margin-top:40px;
+  justify-content:center;
 }
 .scene-2 .hero__links{ margin-top:34px; }
 
@@ -408,17 +412,21 @@ main{
   color:var(--text);
   max-width:60ch;
   font-size:17px;
+  margin-left:auto;
+  margin-right:auto;
 }
 .lede + .lede{ margin-top:14px; }
 
 .quote-block{
-  margin-top:32px;
+  margin:32px auto 0;
+  max-width:640px;
   padding:20px 24px;
-  border-left:2px solid var(--accent);
+  border-top:2px solid var(--accent);
   color:var(--muted);
   font-style:normal;
   font-size:15px;
-  background:linear-gradient(90deg, rgba(184,255,61,0.06), transparent 60%);
+  text-align:center;
+  background:radial-gradient(ellipse 80% 100% at 50% 0%, rgba(184,255,61,0.06), transparent 70%);
 }
 
 /* ---------- about page specifics ---------- */
@@ -429,6 +437,7 @@ main{
   background:var(--border);
   border:1px solid var(--border);
   margin-top:40px;
+  justify-content:center;
 }
 .stat{
   background:var(--bg-card);
@@ -456,14 +465,16 @@ main{
   display:flex;
   flex-wrap:wrap;
   gap:10px;
+  justify-content:center;
 }
 
 /* ---------- portfolio grid ---------- */
 .grid{
   margin-top:36px;
   display:grid;
-  grid-template-columns:repeat(auto-fit, minmax(260px,1fr));
+  grid-template-columns:repeat(auto-fit, minmax(260px,320px));
   gap:20px;
+  justify-content:center;
 }
 .card{
   background:var(--bg-card);
@@ -552,6 +563,7 @@ main{
 .video-list{
   display:flex;
   flex-direction:column;
+  align-items:center;
   gap:30px;
   margin-top:30px;
 }
@@ -773,6 +785,27 @@ main{
 .bgm-widget__btn svg{ width:17px; height:17px; fill:var(--muted); transition:fill .15s ease; }
 .bgm-widget__btn:hover svg{ fill:var(--accent); }
 .bgm-widget.is-playing .bgm-widget__btn svg{ fill:var(--accent); }
+
+/* tiny audio-reactive equalizer — subtle on purpose, no extra motion when paused/muted */
+.bgm-widget__eq{
+  flex:0 0 auto;
+  display:flex;
+  align-items:flex-end;
+  gap:2px;
+  width:18px;
+  height:14px;
+}
+.bgm-widget__eq span{
+  flex:1;
+  height:100%;
+  border-radius:1px;
+  background:var(--muted);
+  opacity:0.55;
+  transform:scaleY(0.12);
+  transform-origin:bottom;
+  transition:transform .1s linear, background-color .2s ease;
+}
+.bgm-widget.is-playing .bgm-widget__eq span{ background:var(--accent); }
 .bgm-widget__volume{
   -webkit-appearance:none;
   appearance:none;
