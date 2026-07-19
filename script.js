@@ -86,18 +86,7 @@
     requestAnimationFrame(tick);
   }
 
-  // ---- looping automatic glitch flicker on the hero title (fixed pace, not random) ----
-  const glitchEls = document.querySelectorAll('.glitch');
-  if (glitchEls.length && !reduceMotion) {
-    const LOOP_MS = 5200;   // pause between flickers
-    const FLICKER_MS = 340; // how long each flicker lasts
-    glitchEls.forEach((el) => {
-      setInterval(() => {
-        el.classList.add('auto-glitch');
-        setTimeout(() => el.classList.remove('auto-glitch'), FLICKER_MS);
-      }, LOOP_MS);
-    });
-  }
+  // ---- glitch on .glitch title now runs entirely via CSS (continuous loop) ----
 
   // ---- pinned hero: crossfade scene-1 -> scene-2 while scrolling ----
   const heroPin = document.querySelector('.hero-pin');

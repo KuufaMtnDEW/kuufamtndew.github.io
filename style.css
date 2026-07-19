@@ -157,9 +157,51 @@ a{ color:inherit; text-decoration:none; }
 
 /* ---------- layout shell ---------- */
 main{
-  max-width:960px;
+  max-width:1180px;
   margin:0 auto;
   padding:0 6vw 76px; /* clears the fixed footer */
+}
+
+/* decorative vertical rails — fill the empty gutters on wide screens */
+.rail{
+  display:none;
+  position:fixed;
+  top:0;
+  bottom:0;
+  width:46px;
+  align-items:center;
+  justify-content:center;
+  z-index:1;
+  pointer-events:none;
+  overflow:hidden;
+}
+.rail--left{ left:14px; }
+.rail--right{ right:14px; }
+.rail::before{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:60px;
+  bottom:80px;
+  width:1px;
+  background:var(--border);
+}
+.rail__track{
+  writing-mode:vertical-rl;
+  font-size:11px;
+  letter-spacing:0.28em;
+  color:var(--muted);
+  text-transform:uppercase;
+  white-space:nowrap;
+  animation:railScroll 26s linear infinite;
+}
+.rail--right .rail__track{ animation-direction:reverse; }
+@keyframes railScroll{
+  0%{ transform:translateY(-50%); }
+  100%{ transform:translateY(0%); }
+}
+@media (min-width:1400px){
+  .rail{ display:flex; }
 }
 
 .eyebrow{
@@ -173,6 +215,30 @@ main{
   margin-bottom:14px;
 }
 .eyebrow::before{ content:"//"; color:var(--muted); }
+
+/* ---------- video embed ---------- */
+.video-embed{
+  margin-top:32px;
+  position:relative;
+  width:100%;
+  aspect-ratio:16/9;
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  overflow:hidden;
+  background:var(--bg-card);
+  box-shadow:0 20px 50px -30px rgba(0,0,0,0.6);
+  transition:border-color .2s ease, box-shadow .2s ease;
+}
+.video-embed:hover{
+  border-color:var(--accent);
+}
+.video-embed iframe{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  border:0;
+}
 
 /* ---------- pinned two-scene hero ---------- */
 .hero-pin{
@@ -205,7 +271,8 @@ main{
   color:var(--text);
   text-shadow:0 0 40px rgba(184,255,61,0.25);
 }
-/* glitch effect: on hover AND a brief automatic flicker every few seconds */
+/* glitch effect: runs continuously, forever, at a slow/calm pace.
+   Hover speeds it up briefly for a bit of extra punch. */
 .glitch{
   position:relative;
   display:inline-block;
@@ -219,23 +286,24 @@ main{
   overflow:hidden;
   opacity:0;
 }
-.glitch::before{ color:var(--glitch); }
-.glitch::after{ color:var(--accent); }
-.glitch:hover::before,
-.glitch.auto-glitch::before{
-  opacity:0.85;
-  animation:glitchShift 420ms steps(2,end) infinite;
+.glitch::before{ color:var(--glitch); animation:glitchLoopA 7s ease-in-out infinite; }
+.glitch::after{ color:var(--accent); animation:glitchLoopB 7s ease-in-out infinite; }
+.glitch:hover::before{ animation-duration:1.4s; }
+.glitch:hover::after{ animation-duration:1.4s; }
+
+@keyframes glitchLoopA{
+  0%, 88%{ opacity:0; clip-path:inset(0 0 100% 0); transform:translate(0,0); }
+  90%{ opacity:0.8; clip-path:inset(10% 0 60% 0); transform:translate(-3px,-1px); }
+  92.5%{ opacity:0.8; clip-path:inset(55% 0 15% 0); transform:translate(3px,1px); }
+  95%{ opacity:0.8; clip-path:inset(20% 0 50% 0); transform:translate(-2px,2px); }
+  97%, 100%{ opacity:0; clip-path:inset(0 0 100% 0); transform:translate(0,0); }
 }
-.glitch:hover::after,
-.glitch.auto-glitch::after{
-  opacity:0.85;
-  animation:glitchShift 420ms steps(2,end) infinite reverse;
-}
-@keyframes glitchShift{
-  0%{ clip-path:inset(0 0 85% 0); transform:translate(-3px,-1px); }
-  30%{ clip-path:inset(30% 0 40% 0); transform:translate(3px,1px); }
-  60%{ clip-path:inset(70% 0 5% 0); transform:translate(-2px,2px); }
-  100%{ clip-path:inset(10% 0 60% 0); transform:translate(2px,-2px); }
+@keyframes glitchLoopB{
+  0%, 89%{ opacity:0; clip-path:inset(100% 0 0 0); transform:translate(0,0); }
+  91%{ opacity:0.8; clip-path:inset(60% 0 10% 0); transform:translate(3px,1px); }
+  93.5%{ opacity:0.8; clip-path:inset(15% 0 55% 0); transform:translate(-3px,-1px); }
+  96%{ opacity:0.8; clip-path:inset(50% 0 20% 0); transform:translate(2px,-2px); }
+  98%, 100%{ opacity:0; clip-path:inset(100% 0 0 0); transform:translate(0,0); }
 }
 
 .hero__tagline{
@@ -261,6 +329,7 @@ main{
 
 .hero__links{
   display:flex;
+  flex-wrap:wrap;
   gap:18px;
   margin-top:40px;
 }
@@ -478,11 +547,39 @@ footer{
 }
 
 @media (max-width:640px){
-  .nav__links{ gap:16px; font-size:11px; }
-  .hero-pin{ height:140vh; }
-  .btn{ padding:17px 26px; font-size:16px; }
-  footer{ flex-direction:column; align-items:flex-start; padding:14px 6vw; }
-  main{ padding-bottom:110px; }
+  .nav{ padding:14px 5vw; }
+  .nav__brand{ font-size:16px; }
+  .nav__links{ gap:14px; font-size:10.5px; }
+
+  .hero-pin{ height:130vh; }
+  .hero__title{ font-size:clamp(44px, 15vw, 80px); }
+  .hero__tagline{ font-size:16px; }
+  .hero__meta{ gap:8px; }
+  .chip{ font-size:12px; padding:7px 12px; }
+
+  .btn{ padding:16px 24px; font-size:15px; flex:1 1 auto; justify-content:center; }
+  .hero__links{ gap:12px; }
+
+  .section{ padding:52px 0; }
+  .section__title{ font-size:26px; }
+  .lede{ font-size:15px; }
+
+  .stat-row{ grid-template-columns:repeat(2, 1fr); }
+  .stat__num{ font-size:26px; }
+
+  .grid{ grid-template-columns:1fr; gap:16px; }
+
+  footer{ flex-direction:column; align-items:flex-start; padding:12px 5vw; gap:8px; }
+  footer span{ font-size:11px; }
+  .footer__socials a{ padding:6px 10px; font-size:11px; }
+  main{ padding:0 5vw 128px; }
+}
+
+@media (max-width:380px){
+  .nav__brand{ font-size:14px; }
+  .nav__links{ gap:10px; font-size:9.5px; }
+  .hero__title{ font-size:clamp(38px, 16vw, 64px); }
+  .btn{ padding:14px 18px; font-size:14px; }
 }
 
 @media (prefers-reduced-motion: reduce){
