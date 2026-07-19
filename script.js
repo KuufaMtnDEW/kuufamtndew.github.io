@@ -74,6 +74,7 @@
     setActiveNavLink();
     initHeroPin();
     initVideoPlayers();
+    if (updateScrollColor) updateScrollColor();
   }
 
   function setActiveNavLink() {
@@ -437,6 +438,30 @@
     setupAudioReactivity(audio);
   }
 
+  // ---- scrollbar color: green at the top of the page, fading to purple at the bottom ----
+  let updateScrollColor = null;
+  function initScrollColor() {
+    const GREEN = [184, 255, 61];   // --accent
+    const PURPLE = [157, 78, 221];  // --purple
+    const root = document.documentElement;
+
+    function update() {
+      const max = root.scrollHeight - window.innerHeight;
+      const t = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
+      const r = Math.round(GREEN[0] + (PURPLE[0] - GREEN[0]) * t);
+      const g = Math.round(GREEN[1] + (PURPLE[1] - GREEN[1]) * t);
+      const b = Math.round(GREEN[2] + (PURPLE[2] - GREEN[2]) * t);
+      root.style.setProperty('--scroll-thumb', `rgba(${r}, ${g}, ${b}, 0.6)`);
+      root.style.setProperty('--scroll-thumb-hover', `rgb(${r}, ${g}, ${b})`);
+      root.style.setProperty('--scroll-thumb-glow', `rgba(${r}, ${g}, ${b}, 0.45)`);
+    }
+
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    updateScrollColor = update;
+    update();
+  }
+
   // ------------------------------------------------------------
   // SPA-style navigation: swaps <main>/<nav> via fetch instead of
   // a full page reload, so the <audio> element (and its playback
@@ -509,6 +534,7 @@
   // ---- boot ----
   initParticles();
   initBgm();
+  initScrollColor();
   initPjaxNav();
   mountPage();
 })();
