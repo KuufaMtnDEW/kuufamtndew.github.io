@@ -10,6 +10,9 @@
 <body data-page="home">
 
 <div class="backdrop"></div>
+<div class="backdrop__spot"></div>
+<canvas id="fx" class="fx-canvas"></canvas>
+<div class="grain"></div>
 <div class="scanlines"></div>
 
 <nav class="nav">
@@ -25,21 +28,29 @@
 </nav>
 
 <main>
-  <section class="hero">
-    <div class="eyebrow">video · design · since 2019</div>
-    <h1 class="hero__title glitch" data-text="KUUFA">KUUFA</h1>
-    <p class="hero__tagline">Видеомонтаж и дизайн. Эдиты, цветокоррекция, визуальные эксперименты — под соцсети и под настроение.</p>
+  <section class="hero-pin">
+    <div class="hero-stage">
 
-    <div class="hero__meta">
-      <span class="chip">10 лет монтажа</span>
-      <span class="chip">Sony Vegas Pro</span>
-      <span class="chip">Photoshop</span>
-    </div>
+      <div class="scene scene-1">
+        <div class="eyebrow">video · design · since 2019</div>
+        <h1 class="hero__title glitch" data-text="KUUFA">KUUFA</h1>
+        <p class="hero__tagline">Видеомонтаж и дизайн. Эдиты, цветокоррекция, визуальные эксперименты — под соцсети и под настроение.</p>
+      </div>
 
-    <div class="hero__links">
-      <a class="btn btn--solid" href="portfolio.html">Смотреть работы</a>
-      <a class="btn btn--ghost" href="about.html">Обо мне</a>
+      <div class="scene scene-2">
+        <div class="hero__meta">
+          <span class="chip">10 лет монтажа</span>
+          <span class="chip">Sony Vegas Pro</span>
+          <span class="chip">Photoshop</span>
+        </div>
+        <div class="hero__links">
+          <a class="btn btn--solid" href="portfolio.html">Смотреть работы</a>
+          <a class="btn btn--ghost" href="about.html">Обо мне</a>
+        </div>
+      </div>
+
     </div>
+    <div class="scroll-hint"><span class="scroll-hint__dot"></span>scroll</div>
   </section>
 </main>
 
