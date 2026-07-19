@@ -164,6 +164,12 @@
       video.addEventListener('loadedmetadata', () => {
         if (video.videoWidth && video.videoHeight) {
           wrap.style.aspectRatio = `${video.videoWidth} / ${video.videoHeight}`;
+          // portrait/square clips would otherwise inherit the 420px width cap
+          // and end up very tall — cap by height too and let width follow
+          const MAX_W = 420, MAX_H = 560;
+          const ratio = video.videoWidth / video.videoHeight;
+          let w = Math.min(MAX_W, MAX_H * ratio);
+          wrap.style.maxWidth = Math.round(w) + 'px';
         }
         if (timeEl) timeEl.textContent = `${fmtTime(0)} / ${fmtTime(video.duration)}`;
       });

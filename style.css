@@ -552,8 +552,8 @@ main{
 .video-list{
   display:flex;
   flex-direction:column;
-  gap:36px;
-  margin-top:34px;
+  gap:30px;
+  margin-top:30px;
 }
 .video-item__label{
   display:flex;
@@ -572,7 +572,7 @@ main{
 .vplayer{
   position:relative;
   width:100%;
-  max-width:640px;
+  max-width:420px;
   margin:0 auto;
   aspect-ratio:16/9; /* overridden per-video via JS once real dimensions are known */
   background:#000;
