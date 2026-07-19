@@ -785,27 +785,6 @@ main{
 .bgm-widget__btn svg{ width:17px; height:17px; fill:var(--muted); transition:fill .15s ease; }
 .bgm-widget__btn:hover svg{ fill:var(--accent); }
 .bgm-widget.is-playing .bgm-widget__btn svg{ fill:var(--accent); }
-
-/* tiny audio-reactive equalizer — subtle on purpose, no extra motion when paused/muted */
-.bgm-widget__eq{
-  flex:0 0 auto;
-  display:flex;
-  align-items:flex-end;
-  gap:2px;
-  width:18px;
-  height:14px;
-}
-.bgm-widget__eq span{
-  flex:1;
-  height:100%;
-  border-radius:1px;
-  background:var(--muted);
-  opacity:0.55;
-  transform:scaleY(0.12);
-  transform-origin:bottom;
-  transition:transform .1s linear, background-color .2s ease;
-}
-.bgm-widget.is-playing .bgm-widget__eq span{ background:var(--accent); }
 .bgm-widget__volume{
   -webkit-appearance:none;
   appearance:none;

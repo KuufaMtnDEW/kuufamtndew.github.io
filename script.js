@@ -1,7 +1,8 @@
 // ============================================================
 // KUUFA — shared behaviour: SPA-style nav (audio survives page
-// changes), particle trail, glitch flicker, pinned hero crossfade,
-// custom video player, sitewide background music + equalizer
+// changes), particle trail with a music-reactive background
+// sparkle, glitch flicker, pinned hero crossfade, custom video
+// player, sitewide background music
 // ============================================================
 
 (function () {
@@ -10,6 +11,57 @@
   // cleanup handle for the hero-pin scroll listener, so re-mounting
   // a new page after a pjax navigation doesn't stack duplicate listeners
   let unmountHeroPin = null;
+
+  // shared "how loud is the music right now" reading (0..1), used by the
+  // background particle canvas to sparkle gently in time with the track
+  const audioReactive = { level: 0 };
+
+  // analyses the bgm <audio> element via the Web Audio API and keeps
+  // audioReactive.level updated; safe to call once, no-ops if unsupported
+  function setupAudioReactivity(audio) {
+    if (reduceMotion) return;
+    let analyser, dataArray, audioCtx, started = false;
+
+    function setup() {
+      if (started) return;
+      started = true;
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const source = audioCtx.createMediaElementSource(audio);
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 64;
+        analyser.smoothingTimeConstant = 0.82; // smoothed out — no jitter, just a gentle pulse
+        dataArray = new Uint8Array(analyser.frequencyBinCount);
+        source.connect(analyser);
+        analyser.connect(audioCtx.destination);
+        tick();
+      } catch (e) {
+        // Web Audio unavailable — background just stays calm, no harm done
+      }
+    }
+
+    function tick() {
+      requestAnimationFrame(tick);
+      const idle = audio.paused || audio.muted || audio.volume === 0;
+      if (!analyser || idle) { audioReactive.level = 0; return; }
+      analyser.getByteFrequencyData(dataArray);
+      // bass-weighted average — most responsive to the beat, least jumpy
+      let sum = 0;
+      const bassBins = Math.min(10, dataArray.length);
+      for (let i = 0; i < bassBins; i++) sum += dataArray[i];
+      audioReactive.level = Math.min(1, (sum / bassBins) / 190);
+    }
+
+    function resumeOnGesture() {
+      setup();
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+      document.removeEventListener('click', resumeOnGesture);
+      document.removeEventListener('keydown', resumeOnGesture);
+    }
+    document.addEventListener('click', resumeOnGesture);
+    document.addEventListener('keydown', resumeOnGesture);
+    audio.addEventListener('play', resumeOnGesture);
+  }
 
   // ------------------------------------------------------------
   // per-page setup — re-run every time <main>/<nav> get swapped
@@ -208,21 +260,23 @@
     window.addEventListener('resize', resize);
 
     const colors = ['#B8FF3D', '#FF3B8D'];
-    const MAX_PARTICLES = 70; // trimmed down — kept light so the equalizer can carry the visual interest
+    const MAX_PARTICLES = 90;
     let particles = [];
     let lastSpawn = 0;
+    let sparkleFrame = 0;
 
-    function spawn(x, y, count) {
+    function spawn(x, y, count, glow) {
       for (let i = 0; i < count; i++) {
         particles.push({
           x: x * dpr,
           y: y * dpr,
-          vx: (Math.random() - 0.5) * 1.1 * dpr,
-          vy: (Math.random() - 1.1) * 1.1 * dpr,
-          r: (Math.random() * 1.6 + 0.8) * dpr,
+          vx: (glow ? (Math.random() - 0.5) * 0.12 : (Math.random() - 0.5) * 1.1) * dpr,
+          vy: (glow ? (Math.random() - 0.5) * 0.12 : (Math.random() - 1.1) * 1.1) * dpr,
+          r: (glow ? Math.random() * 1.8 + 1.2 : Math.random() * 1.6 + 0.8) * dpr,
           life: 1,
-          decay: 0.022 + Math.random() * 0.016,
+          decay: (glow ? 0.012 : 0.022) + Math.random() * 0.014,
           color: colors[Math.floor(Math.random() * colors.length)],
+          glow: !!glow,
         });
       }
       if (particles.length > MAX_PARTICLES) particles = particles.slice(-MAX_PARTICLES);
@@ -246,14 +300,24 @@
 
     function tick() {
       ctx.clearRect(0, 0, w, h);
+
+      // music-reactive screen-wide sparkle — soft glowing dots that twinkle
+      // in time with the bass, scattered anywhere on screen (not just near
+      // the cursor). Stays calm and sparse even at full volume.
+      sparkleFrame++;
+      const level = audioReactive.level;
+      if (level > 0.06 && sparkleFrame % 4 === 0) {
+        spawn(Math.random() * window.innerWidth, Math.random() * window.innerHeight, level > 0.6 ? 2 : 1, true);
+      }
+
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
         p.x += p.vx;
         p.y += p.vy;
-        p.vy -= 0.01 * dpr;
+        if (!p.glow) p.vy -= 0.01 * dpr;
         p.life -= p.decay;
         if (p.life <= 0) { particles.splice(i, 1); continue; }
-        ctx.globalAlpha = p.life * 0.55;
+        ctx.globalAlpha = p.life * (p.glow ? 0.32 : 0.55);
         ctx.fillStyle = p.color;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
@@ -265,8 +329,7 @@
     requestAnimationFrame(tick);
   }
 
-  // ---- sitewide background music (persists mute/volume/position via localStorage)
-  //      + a small equalizer readout driven by the Web Audio API ----
+  // ---- sitewide background music (persists mute/volume/position via localStorage) ----
   function initBgm() {
     const AUDIO_SRC = 'audio/background.mp3';
     const KEY_MUTED = 'kuufa-bgm-muted-v2';
@@ -326,13 +389,12 @@
       }
     }, 3000);
 
-    // ---- floating widget: mute button, volume slider, tiny equalizer ----
+    // ---- floating widget: mute button + volume slider ----
     let widget = document.querySelector('.bgm-widget');
     if (!widget) {
       widget = document.createElement('div');
       widget.className = 'bgm-widget';
       widget.innerHTML = `
-        <div class="bgm-widget__eq" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
         <button class="bgm-widget__btn" data-bgm-toggle aria-label="Звук фоновой музыки"></button>
         <input class="bgm-widget__volume" type="range" min="0" max="1" step="0.05" data-bgm-volume>
       `;
@@ -341,7 +403,6 @@
 
     const toggleBtn = widget.querySelector('[data-bgm-toggle]');
     const volumeSlider = widget.querySelector('[data-bgm-volume]');
-    const eqBars = widget.querySelectorAll('.bgm-widget__eq span');
     volumeSlider.value = String(storedVolume);
 
     function syncWidget() {
@@ -368,50 +429,8 @@
     audio.addEventListener('play', syncWidget);
     audio.addEventListener('pause', syncWidget);
 
-    // ---- tiny audio-reactive equalizer, subtle by design ----
-    if (!reduceMotion && eqBars.length) {
-      let analyser, dataArray, audioCtx, started = false;
-
-      function setupAnalyser() {
-        if (started) return;
-        started = true;
-        try {
-          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-          const source = audioCtx.createMediaElementSource(audio);
-          analyser = audioCtx.createAnalyser();
-          analyser.fftSize = 32;
-          analyser.smoothingTimeConstant = 0.75;
-          dataArray = new Uint8Array(analyser.frequencyBinCount);
-          source.connect(analyser);
-          analyser.connect(audioCtx.destination);
-          requestAnimationFrame(tick);
-        } catch (e) {
-          // Web Audio unavailable (e.g. blocked by browser policy) — bars just stay idle, no big deal
-        }
-      }
-
-      function tick() {
-        requestAnimationFrame(tick);
-        const idle = audio.paused || audio.muted || audio.volume === 0;
-        if (analyser && !idle) analyser.getByteFrequencyData(dataArray);
-        eqBars.forEach((bar, i) => {
-          const raw = analyser && !idle ? dataArray[i * 2 + 1] || 0 : 0;
-          const scale = idle ? 0.12 : Math.min(1, Math.max(0.12, raw / 200));
-          bar.style.transform = `scaleY(${scale.toFixed(2)})`;
-        });
-      }
-
-      // Web Audio needs a user gesture before it can start/resume
-      function resumeOnGesture() {
-        setupAnalyser();
-        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-        document.removeEventListener('click', resumeOnGesture);
-        document.removeEventListener('keydown', resumeOnGesture);
-      }
-      document.addEventListener('click', resumeOnGesture);
-      document.addEventListener('keydown', resumeOnGesture);
-      audio.addEventListener('play', resumeOnGesture);
-    }
+    // feeds the background canvas sparkle (see initParticles) with the music level
+    setupAudioReactivity(audio);
   }
 
   // ------------------------------------------------------------
