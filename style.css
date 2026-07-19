@@ -230,16 +230,19 @@ main{
   white-space:nowrap;
   animation:railScroll 150s linear infinite;
 }
-/* left rail: mirror the glyph orientation so letters face inward (toward
-   the page), and reverse the scroll so it runs top -> bottom, opposite
-   of the right rail which runs bottom -> top */
+/* left rail: rotated 180deg so the glyphs face the opposite end (feet
+   toward the page, not head) — the same rotation also flips the visual
+   scroll direction to top -> bottom, opposite the right rail */
 .rail--left .rail__track{
-  writing-mode:vertical-lr;
-  animation-direction:reverse;
+  animation-name:railScrollFlipped;
 }
 @keyframes railScroll{
   0%{ transform:translateY(0%); }
   100%{ transform:translateY(-50%); }
+}
+@keyframes railScrollFlipped{
+  0%{ transform:rotate(180deg) translateY(0%); }
+  100%{ transform:rotate(180deg) translateY(-50%); }
 }
 @media (min-width:1400px){
   .rail{ display:flex; }
