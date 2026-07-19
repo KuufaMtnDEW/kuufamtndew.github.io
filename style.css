@@ -572,7 +572,7 @@ main{
 .vplayer{
   position:relative;
   width:100%;
-  max-width:420px;
+  max-width:520px;
   margin:0 auto;
   aspect-ratio:16/9; /* overridden per-video via JS once real dimensions are known */
   background:#000;
@@ -803,6 +803,10 @@ main{
 @media (max-width:640px){
   .bgm-widget{ right:12px; bottom:82px; padding:8px 10px; gap:8px; }
   .bgm-widget__volume{ width:46px; }
+}
+
+@media (min-width:1400px){
+  .bgm-widget{ right:76px; } /* clears the decorative side rail, which sits at right:14px..60px */
 }
 
 /* ---------- footer — pinned to the bottom of the viewport, always visible ---------- */

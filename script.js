@@ -166,7 +166,7 @@
           wrap.style.aspectRatio = `${video.videoWidth} / ${video.videoHeight}`;
           // portrait/square clips would otherwise inherit the 420px width cap
           // and end up very tall — cap by height too and let width follow
-          const MAX_W = 420, MAX_H = 560;
+          const MAX_W = 520, MAX_H = 640;
           const ratio = video.videoWidth / video.videoHeight;
           let w = Math.min(MAX_W, MAX_H * ratio);
           wrap.style.maxWidth = Math.round(w) + 'px';
@@ -248,8 +248,8 @@
   // ---- sitewide background music (persists mute/volume/position via localStorage) ----
   (function initBgm() {
     const AUDIO_SRC = 'audio/background.mp3';
-    const KEY_MUTED = 'kuufa-bgm-muted';
-    const KEY_VOLUME = 'kuufa-bgm-volume';
+    const KEY_MUTED = 'kuufa-bgm-muted-v2';
+    const KEY_VOLUME = 'kuufa-bgm-volume-v2';
     const KEY_TIME = 'kuufa-bgm-time';
 
     const ICON_ON = '<svg viewBox="0 0 24 24"><path d="M3 10v4h4l5 5V5L7 10H3zm13.5 2a4.5 4.5 0 0 0-2.5-4.03v8.06A4.5 4.5 0 0 0 16.5 12zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>';
@@ -266,7 +266,7 @@
     }
 
     let storedMuted = false;
-    let storedVolume = 0.5;
+    let storedVolume = 0.15;
     let storedTime = 0;
     try {
       storedMuted = localStorage.getItem(KEY_MUTED) === '1';
