@@ -548,82 +548,62 @@ main{
   color:var(--muted);
 }
 
-/* ---------- own vertical swipe feed (replaces TikTok embeds) ---------- */
-.tiktok-feed{
-  height:calc(100vh - 66px - 68px); /* clears sticky nav + fixed footer */
-  overflow-y:auto;
-  scroll-snap-type:y mandatory;
-  scrollbar-width:none;
-}
-.tiktok-feed::-webkit-scrollbar{ display:none; }
-.tiktok-slide{
-  height:100%;
-  scroll-snap-align:start;
+/* ---------- video gallery page ---------- */
+.video-list{
   display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:24px 6vw;
+  flex-direction:column;
+  gap:36px;
+  margin-top:34px;
 }
-.tiktok-slide__inner{ width:100%; max-width:360px; }
+.video-item__label{
+  display:flex;
+  align-items:baseline;
+  gap:10px;
+  margin-bottom:10px;
+  font-family:'Space Grotesk', sans-serif;
+  font-size:13px;
+  letter-spacing:0.06em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.video-item__label span{ color:var(--accent); }
 
 /* ---------- custom HTML5 video player (own hosting, no third-party branding) ---------- */
 .vplayer{
   position:relative;
   width:100%;
-  aspect-ratio:9/16;
-  background:var(--bg-card);
+  max-width:640px;
+  margin:0 auto;
+  aspect-ratio:16/9; /* overridden per-video via JS once real dimensions are known */
+  background:#000;
   border:1px solid var(--border);
-  border-radius:10px;
+  border-radius:12px;
   overflow:hidden;
-  box-shadow:inset 0 0 0 1px rgba(184,255,61,0.06), 0 20px 50px -20px rgba(0,0,0,0.6);
+  box-shadow:inset 0 0 0 1px rgba(184,255,61,0.06), 0 24px 60px -24px rgba(0,0,0,0.7);
+  transition:box-shadow .25s ease, border-color .25s ease;
+}
+.vplayer:hover{
+  border-color:rgba(184,255,61,0.35);
+  box-shadow:inset 0 0 0 1px rgba(184,255,61,0.1), 0 24px 60px -20px rgba(184,255,61,0.18);
 }
 .vplayer__video{
   position:absolute;
   inset:0;
   width:100%;
   height:100%;
-  object-fit:cover;
+  object-fit:contain;
   background:#000;
 }
 .vplayer__overlay{
   position:absolute;
   inset:0;
   cursor:pointer;
-  background:linear-gradient(180deg, rgba(16,21,21,0) 60%, rgba(16,21,21,0.65) 100%);
-}
-.vplayer__badge{
-  position:absolute;
-  top:14px;
-  left:14px;
-  font-size:11px;
-  letter-spacing:0.06em;
-  text-transform:uppercase;
-  color:var(--muted);
-  background:rgba(16,21,21,0.6);
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  padding:5px 9px;
-  pointer-events:none;
-}
-.vplayer__playicon{
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%) scale(0.85);
-  width:60px;
-  height:60px;
-  border-radius:50%;
-  background:rgba(16,21,21,0.55);
-  border:1px solid var(--border);
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  background:linear-gradient(180deg, rgba(16,21,21,0) 55%, rgba(16,21,21,0.7) 100%);
   opacity:0;
-  transition:opacity .18s ease, transform .18s ease;
-  pointer-events:none;
+  transition:opacity .2s ease;
 }
-.vplayer__playicon svg{ width:22px; height:22px; fill:var(--text); }
-.vplayer.is-paused .vplayer__playicon{ opacity:1; transform:translate(-50%,-50%) scale(1); }
+.vplayer:hover .vplayer__overlay,
+.vplayer.is-paused .vplayer__overlay{ opacity:1; }
 .vplayer__fallback{
   position:absolute;
   inset:0;
@@ -649,6 +629,28 @@ main{
 .vplayer.has-error .vplayer__video,
 .vplayer.has-error .vplayer__playicon{ display:none; }
 
+.vplayer__playicon{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%) scale(0.8);
+  width:72px;
+  height:72px;
+  border-radius:50%;
+  background:rgba(16,21,21,0.55);
+  backdrop-filter:blur(6px);
+  border:1px solid rgba(184,255,61,0.4);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  opacity:0;
+  transition:opacity .2s ease, transform .2s ease, background .2s ease;
+  pointer-events:none;
+}
+.vplayer__playicon svg{ width:26px; height:26px; fill:var(--text); margin-left:2px; }
+.vplayer.is-paused .vplayer__playicon{ opacity:1; transform:translate(-50%,-50%) scale(1); }
+.vplayer:hover .vplayer__playicon{ background:rgba(184,255,61,0.14); }
+
 .vplayer__controls{
   position:absolute;
   left:0;
@@ -656,10 +658,17 @@ main{
   bottom:0;
   display:flex;
   align-items:center;
-  gap:10px;
-  padding:10px 12px 12px;
+  gap:12px;
+  padding:10px 14px 14px;
   z-index:2;
+  opacity:0;
+  transform:translateY(6px);
+  transition:opacity .2s ease, transform .2s ease;
 }
+.vplayer:hover .vplayer__controls,
+.vplayer.is-paused .vplayer__controls,
+.vplayer.is-scrubbing .vplayer__controls{ opacity:1; transform:translateY(0); }
+
 .vplayer__btn{
   flex:0 0 auto;
   width:30px;
@@ -673,12 +682,13 @@ main{
   color:var(--text);
   padding:0;
 }
-.vplayer__btn svg{ width:18px; height:18px; fill:var(--text); }
+.vplayer__btn svg{ width:19px; height:19px; fill:var(--text); transition:fill .15s ease; }
 .vplayer__btn:hover svg{ fill:var(--accent); }
+
 .vplayer__progress{
   position:relative;
   flex:1 1 auto;
-  height:14px;
+  height:18px;
   display:flex;
   align-items:center;
   cursor:pointer;
@@ -687,31 +697,112 @@ main{
   content:'';
   position:absolute;
   left:0; right:0;
-  height:3px;
+  height:4px;
   border-radius:2px;
   background:rgba(245,248,245,0.18);
+  transition:height .12s ease;
 }
+.vplayer__progress:hover::before{ height:6px; }
 .vplayer__progress-fill{
   position:absolute;
   left:0;
-  height:3px;
+  height:4px;
   width:0%;
   border-radius:2px;
   background:var(--accent);
   pointer-events:none;
 }
-.vplayer__index{
+.vplayer__progress:hover .vplayer__progress-fill{ height:6px; }
+.vplayer__progress-thumb{
   position:absolute;
-  top:14px;
-  right:14px;
-  font-family:'Space Grotesk', sans-serif;
-  font-size:13px;
-  color:var(--muted);
+  left:0%;
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  background:var(--accent);
+  transform:translateX(-50%) scale(0);
+  transition:transform .12s ease;
   pointer-events:none;
+  box-shadow:0 0 0 4px rgba(184,255,61,0.18);
+}
+.vplayer__progress:hover .vplayer__progress-thumb,
+.vplayer.is-scrubbing .vplayer__progress-thumb{ transform:translateX(-50%) scale(1); }
+
+.vplayer__time{
+  flex:0 0 auto;
+  font-size:11px;
+  color:var(--muted);
+  font-variant-numeric:tabular-nums;
+  letter-spacing:0.02em;
 }
 
 @media (max-width:640px){
-  .tiktok-slide__inner{ max-width:300px; }
+  .vplayer__controls{ opacity:1; transform:none; padding:8px 10px 10px; }
+  .vplayer__time{ display:none; }
+}
+
+/* ---------- sitewide background-music widget ---------- */
+.bgm-widget{
+  position:fixed;
+  right:18px;
+  bottom:90px;
+  z-index:40;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background:rgba(16,21,21,0.78);
+  border:1px solid var(--border);
+  border-radius:24px;
+  padding:9px 12px;
+  backdrop-filter:blur(10px);
+  box-shadow:0 14px 34px -14px rgba(0,0,0,0.6);
+}
+.bgm-widget__btn{
+  flex:0 0 auto;
+  width:26px;
+  height:26px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:transparent;
+  border:none;
+  cursor:pointer;
+  color:var(--text);
+  padding:0;
+}
+.bgm-widget__btn svg{ width:17px; height:17px; fill:var(--muted); transition:fill .15s ease; }
+.bgm-widget__btn:hover svg{ fill:var(--accent); }
+.bgm-widget.is-playing .bgm-widget__btn svg{ fill:var(--accent); }
+.bgm-widget__volume{
+  -webkit-appearance:none;
+  appearance:none;
+  width:64px;
+  height:3px;
+  border-radius:2px;
+  background:rgba(245,248,245,0.18);
+  outline:none;
+  cursor:pointer;
+}
+.bgm-widget__volume::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  width:11px;
+  height:11px;
+  border-radius:50%;
+  background:var(--accent);
+  cursor:pointer;
+}
+.bgm-widget__volume::-moz-range-thumb{
+  width:11px;
+  height:11px;
+  border:none;
+  border-radius:50%;
+  background:var(--accent);
+  cursor:pointer;
+}
+
+@media (max-width:640px){
+  .bgm-widget{ right:12px; bottom:82px; padding:8px 10px; gap:8px; }
+  .bgm-widget__volume{ width:46px; }
 }
 
 /* ---------- footer — pinned to the bottom of the viewport, always visible ---------- */
@@ -778,8 +869,7 @@ footer{
   footer span{ font-size:11px; }
   .footer__socials a{ padding:6px 10px; font-size:11px; }
   main{ padding:0 5vw 128px; }
-  .tiktok-feed{ height:calc(100vh - 58px - 108px); }
-  .tiktok-slide{ padding:16px 5vw; }
+  .video-list{ gap:26px; }
 }
 
 @media (max-width:380px){
@@ -795,4 +885,15 @@ footer{
   .nav__brand-mark{ animation:none; }
   .scene{ position:relative; top:auto; opacity:1 !important; transform:none !important; }
   .scene-2{ margin-top:40px; }
+}
+
+/* ---------- about page — closing gif ---------- */
+.about-gif{
+  display:block;
+  width:100%;
+  max-width:520px;
+  margin:0 auto;
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:0 20px 50px -22px rgba(0,0,0,0.6);
 }
