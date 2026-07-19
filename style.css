@@ -228,11 +228,8 @@ main{
   color:var(--muted);
   text-transform:uppercase;
   white-space:nowrap;
-  animation:railScroll 26s linear infinite;
+  animation:railScroll 150s linear infinite;
 }
-/* both rails now scroll the same way (bottom -> top); the track's actual
-   content is expanded and doubled in script.js (initRails), so a 50%
-   shift always lands on an identical repeat — no visible seam/jump */
 @keyframes railScroll{
   0%{ transform:translateY(0%); }
   100%{ transform:translateY(-50%); }

@@ -459,7 +459,7 @@
       if (track.dataset.expanded) return; // rails live outside <main>, so this only needs to run once
       const unit = track.textContent.trim() + ' ';
       // 14 repeats comfortably outlasts even very tall/ultrawide viewports
-      const half = unit.repeat(14);
+      const half = unit.repeat(6);
       track.textContent = half + half;
       track.dataset.expanded = '1';
     });
