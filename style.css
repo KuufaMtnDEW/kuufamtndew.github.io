@@ -491,6 +491,15 @@ main{
   letter-spacing:0.08em;
 }
 .card__body{ padding:18px; }
+
+/* photo-only cards (real images, no captions) */
+.card--photo{ line-height:0; }
+.card__thumb-img{
+  display:block;
+  width:100%;
+  aspect-ratio:4/5;
+  object-fit:cover;
+}
 .card__title{
   font-family:'Space Grotesk', sans-serif;
   font-weight:700;
@@ -507,6 +516,33 @@ main{
   margin-top:10px;
   font-size:14px;
   color:var(--muted);
+}
+
+/* ---------- TikTok-style vertical swipe feed ---------- */
+.tiktok-feed{
+  height:calc(100vh - 66px - 68px); /* clears sticky nav + fixed footer */
+  overflow-y:auto;
+  scroll-snap-type:y mandatory;
+  scrollbar-width:none;
+}
+.tiktok-feed::-webkit-scrollbar{ display:none; }
+.tiktok-slide{
+  height:100%;
+  scroll-snap-align:start;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px 6vw;
+}
+.tiktok-slide__inner{ width:100%; max-width:780px; }
+.tiktok-slide__inner--placeholder{
+  text-align:center;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+.tiktok-slide--placeholder{
+  border-top:1px solid var(--border);
 }
 
 /* ---------- footer — pinned to the bottom of the viewport, always visible ---------- */
@@ -547,7 +583,7 @@ footer{
 }
 
 @media (max-width:640px){
-  .nav{ padding:14px 5vw; }
+  .nav{ padding:12px 5vw; }
   .nav__brand{ font-size:16px; }
   .nav__links{ gap:14px; font-size:10.5px; }
 
@@ -573,6 +609,8 @@ footer{
   footer span{ font-size:11px; }
   .footer__socials a{ padding:6px 10px; font-size:11px; }
   main{ padding:0 5vw 128px; }
+  .tiktok-feed{ height:calc(100vh - 58px - 108px); }
+  .tiktok-slide{ padding:16px 5vw; }
 }
 
 @media (max-width:380px){

@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Portfolio — KUUFA</title>
-<meta name="description" content="Работы Kuufa: видеомонтаж и дизайн.">
+<title>TikTok — KUUFA</title>
+<meta name="description" content="Видео Kuufa из TikTok.">
 <link rel="stylesheet" href="style.css">
 </head>
-<body data-page="portfolio">
+<body data-page="tiktok">
 
 <div class="backdrop"></div>
 <canvas id="fx" class="fx-canvas"></canvas>
@@ -34,22 +34,28 @@
   </div>
 </nav>
 
-<main>
-  <section class="section" style="border-top:none; padding-top:70px;">
-    <div class="eyebrow">works</div>
-    <h2 class="section__title">Портфолио</h2>
-    <p class="lede">Избранные работы.</p>
+<div class="tiktok-feed">
 
-    <div class="grid">
-      <div class="card card--photo">
-        <img class="card__thumb-img" src="images/project1.jpg" alt="">
-      </div>
-      <div class="card card--photo">
-        <img class="card__thumb-img" src="images/project2.jpg" alt="">
-      </div>
+  <section class="tiktok-slide">
+    <div class="tiktok-slide__inner">
+      <blockquote class="tiktok-embed" cite="https://www.tiktok.com/@kuufamtndew" data-unique-id="kuufamtndew" data-embed-type="creator" style="max-width: 780px; min-width: 288px;">
+        <section>
+          <a target="_blank" href="https://www.tiktok.com/@kuufamtndew?refer=creator_embed">@kuufamtndew</a>
+        </section>
+      </blockquote>
     </div>
   </section>
-</main>
+
+  <section class="tiktok-slide tiktok-slide--placeholder">
+    <div class="tiktok-slide__inner tiktok-slide__inner--placeholder">
+      <div class="eyebrow">soon</div>
+      <h2 class="section__title" style="font-size:28px;">Больше видео скоро</h2>
+      <p class="lede" style="color:var(--muted); max-width:36ch;">Пришлите ссылки на конкретные видео — и здесь появится настоящая вертикальная лента, как в самом TikTok.</p>
+      <a class="btn btn--solid" style="margin-top:24px;" href="https://www.tiktok.com/@kuufamtndew" target="_blank" rel="noopener">Открыть профиль в TikTok</a>
+    </div>
+  </section>
+
+</div>
 
 <footer>
   <span>© 2026 · Kuufa</span>
@@ -59,6 +65,7 @@
   </div>
 </footer>
 
+<script async src="https://www.tiktok.com/embed.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
