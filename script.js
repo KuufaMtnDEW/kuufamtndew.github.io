@@ -21,6 +21,7 @@
   function setupAudioReactivity(audio) {
     if (reduceMotion) return;
     let analyser, dataArray, audioCtx, started = false;
+    let runningPeak = 18; // seed value; adapts to the track's own loudness over time
 
     function setup() {
       if (started) return;
@@ -30,7 +31,7 @@
         const source = audioCtx.createMediaElementSource(audio);
         analyser = audioCtx.createAnalyser();
         analyser.fftSize = 64;
-        analyser.smoothingTimeConstant = 0.82; // smoothed out — no jitter, just a gentle pulse
+        analyser.smoothingTimeConstant = 0.78;
         dataArray = new Uint8Array(analyser.frequencyBinCount);
         source.connect(analyser);
         analyser.connect(audioCtx.destination);
@@ -45,11 +46,14 @@
       const idle = audio.paused || audio.muted || audio.volume === 0;
       if (!analyser || idle) { audioReactive.level = 0; return; }
       analyser.getByteFrequencyData(dataArray);
-      // bass-weighted average — most responsive to the beat, least jumpy
       let sum = 0;
       const bassBins = Math.min(10, dataArray.length);
       for (let i = 0; i < bassBins; i++) sum += dataArray[i];
-      audioReactive.level = Math.min(1, (sum / bassBins) / 190);
+      const avg = sum / bassBins;
+      // auto-gain: track a slowly-decaying peak so the sparkle reacts to the
+      // music's own dynamics, not to the (quiet) absolute volume setting
+      runningPeak = Math.max(avg, runningPeak * 0.992);
+      audioReactive.level = runningPeak > 4 ? Math.min(1, avg / runningPeak) : 0;
     }
 
     function resumeOnGesture() {
@@ -270,11 +274,11 @@
         particles.push({
           x: x * dpr,
           y: y * dpr,
-          vx: (glow ? (Math.random() - 0.5) * 0.12 : (Math.random() - 0.5) * 1.1) * dpr,
-          vy: (glow ? (Math.random() - 0.5) * 0.12 : (Math.random() - 1.1) * 1.1) * dpr,
-          r: (glow ? Math.random() * 1.8 + 1.2 : Math.random() * 1.6 + 0.8) * dpr,
+          vx: (glow ? (Math.random() - 0.5) * 0.1 : (Math.random() - 0.5) * 1.1) * dpr,
+          vy: (glow ? (Math.random() - 0.5) * 0.1 : (Math.random() - 1.1) * 1.1) * dpr,
+          r: (glow ? Math.random() * 2.4 + 1.8 : Math.random() * 1.6 + 0.8) * dpr,
           life: 1,
-          decay: (glow ? 0.012 : 0.022) + Math.random() * 0.014,
+          decay: (glow ? 0.009 : 0.022) + Math.random() * 0.012,
           color: colors[Math.floor(Math.random() * colors.length)],
           glow: !!glow,
         });
@@ -306,8 +310,8 @@
       // the cursor). Stays calm and sparse even at full volume.
       sparkleFrame++;
       const level = audioReactive.level;
-      if (level > 0.06 && sparkleFrame % 4 === 0) {
-        spawn(Math.random() * window.innerWidth, Math.random() * window.innerHeight, level > 0.6 ? 2 : 1, true);
+      if (level > 0.1 && sparkleFrame % 3 === 0) {
+        spawn(Math.random() * window.innerWidth, Math.random() * window.innerHeight, level > 0.55 ? 2 : 1, true);
       }
 
       for (let i = particles.length - 1; i >= 0; i--) {
@@ -317,7 +321,7 @@
         if (!p.glow) p.vy -= 0.01 * dpr;
         p.life -= p.decay;
         if (p.life <= 0) { particles.splice(i, 1); continue; }
-        ctx.globalAlpha = p.life * (p.glow ? 0.32 : 0.55);
+        ctx.globalAlpha = p.life * (p.glow ? 0.5 : 0.55);
         ctx.fillStyle = p.color;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
