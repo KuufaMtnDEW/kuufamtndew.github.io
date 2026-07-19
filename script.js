@@ -275,7 +275,7 @@
     resize();
     window.addEventListener('resize', resize);
 
-    const colors = ['#B8FF3D', '#FF3B8D', '#9D4EDD', '#2BC4FF'];
+    const colors = ['#B8FF3D', '#FF3B8D'];
     const MAX_PARTICLES = 90;
     let particles = [];
     let lastSpawn = 0;
