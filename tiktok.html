@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TikTok — KUUFA</title>
-<meta name="description" content="Видео Kuufa из TikTok.">
+<meta name="description" content="Видео-лента Kuufa — свой плеер, свой хостинг.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body data-page="tiktok">
@@ -34,55 +34,105 @@
   </div>
 </nav>
 
+<!--
+  Своя вертикальная лента вместо официальных TikTok-embed'ов.
+  Как добавить/заменить видео:
+    1. Положить mp4-файл в папку videos/ рядом с html (например videos/tiktok-01.mp4)
+       — сжать через HandBrake/CloudConvert, желательно до ~25 МБ, жёсткий лимит GitHub 100 МБ
+    2. Прописать путь в src у нужного <video class="vplayer__video">
+    3. Скопировать/удалить блок <section class="tiktok-slide">...</section> чтобы изменить число видео
+  Пока файлы не добавлены — плеер покажет собственную заглушку (см. .vplayer__fallback в style.css)
+  вместо сломанной иконки видео.
+-->
 <div class="tiktok-feed">
 
   <section class="tiktok-slide">
     <div class="tiktok-slide__inner">
-      <blockquote class="tiktok-embed" cite="https://www.tiktok.com/@kuufamtndew/video/6980759378056072449" data-video-id="6980759378056072449" style="max-width: 325px; min-width: 288px;">
-        <section><a target="_blank" href="https://www.tiktok.com/@kuufamtndew?refer=embed">@kuufamtndew</a></section>
-      </blockquote>
+      <div class="vplayer">
+        <span class="vplayer__index">01</span>
+        <video class="vplayer__video" src="videos/tiktok-01.mp4" loop playsinline preload="metadata"></video>
+        <div class="vplayer__fallback">Файл не найден<br><code>videos/tiktok-01.mp4</code></div>
+        <div class="vplayer__overlay"></div>
+        <div class="vplayer__playicon"></div>
+        <div class="vplayer__controls">
+          <button class="vplayer__btn" data-vplayer-play aria-label="Play/Pause"></button>
+          <div class="vplayer__progress"><div class="vplayer__progress-fill"></div></div>
+          <button class="vplayer__btn" data-vplayer-mute aria-label="Звук"></button>
+          <button class="vplayer__btn" data-vplayer-fullscreen aria-label="Во весь экран"></button>
+        </div>
+      </div>
     </div>
   </section>
 
   <section class="tiktok-slide">
     <div class="tiktok-slide__inner">
-      <blockquote class="tiktok-embed" cite="https://www.tiktok.com/@kuufamtndew/video/7530327871261265160" data-video-id="7530327871261265160" style="max-width: 325px; min-width: 288px;">
-        <section><a target="_blank" href="https://www.tiktok.com/@kuufamtndew?refer=embed">@kuufamtndew</a></section>
-      </blockquote>
+      <div class="vplayer">
+        <span class="vplayer__index">02</span>
+        <video class="vplayer__video" src="videos/tiktok-02.mp4" loop playsinline preload="metadata"></video>
+        <div class="vplayer__fallback">Файл не найден<br><code>videos/tiktok-02.mp4</code></div>
+        <div class="vplayer__overlay"></div>
+        <div class="vplayer__playicon"></div>
+        <div class="vplayer__controls">
+          <button class="vplayer__btn" data-vplayer-play aria-label="Play/Pause"></button>
+          <div class="vplayer__progress"><div class="vplayer__progress-fill"></div></div>
+          <button class="vplayer__btn" data-vplayer-mute aria-label="Звук"></button>
+          <button class="vplayer__btn" data-vplayer-fullscreen aria-label="Во весь экран"></button>
+        </div>
+      </div>
     </div>
   </section>
 
   <section class="tiktok-slide">
     <div class="tiktok-slide__inner">
-      <blockquote class="tiktok-embed" cite="https://www.tiktok.com/@kuufamtndew/video/7495474382156926226" data-video-id="7495474382156926226" style="max-width: 325px; min-width: 288px;">
-        <section><a target="_blank" href="https://www.tiktok.com/@kuufamtndew?refer=embed">@kuufamtndew</a></section>
-      </blockquote>
+      <div class="vplayer">
+        <span class="vplayer__index">03</span>
+        <video class="vplayer__video" src="videos/tiktok-03.mp4" loop playsinline preload="metadata"></video>
+        <div class="vplayer__fallback">Файл не найден<br><code>videos/tiktok-03.mp4</code></div>
+        <div class="vplayer__overlay"></div>
+        <div class="vplayer__playicon"></div>
+        <div class="vplayer__controls">
+          <button class="vplayer__btn" data-vplayer-play aria-label="Play/Pause"></button>
+          <div class="vplayer__progress"><div class="vplayer__progress-fill"></div></div>
+          <button class="vplayer__btn" data-vplayer-mute aria-label="Звук"></button>
+          <button class="vplayer__btn" data-vplayer-fullscreen aria-label="Во весь экран"></button>
+        </div>
+      </div>
     </div>
   </section>
 
   <section class="tiktok-slide">
     <div class="tiktok-slide__inner">
-      <blockquote class="tiktok-embed" cite="https://www.tiktok.com/@kuufamtndew/video/7338409728076188936" data-video-id="7338409728076188936" style="max-width: 325px; min-width: 288px;">
-        <section><a target="_blank" href="https://www.tiktok.com/@kuufamtndew?refer=embed">@kuufamtndew</a></section>
-      </blockquote>
+      <div class="vplayer">
+        <span class="vplayer__index">04</span>
+        <video class="vplayer__video" src="videos/tiktok-04.mp4" loop playsinline preload="metadata"></video>
+        <div class="vplayer__fallback">Файл не найден<br><code>videos/tiktok-04.mp4</code></div>
+        <div class="vplayer__overlay"></div>
+        <div class="vplayer__playicon"></div>
+        <div class="vplayer__controls">
+          <button class="vplayer__btn" data-vplayer-play aria-label="Play/Pause"></button>
+          <div class="vplayer__progress"><div class="vplayer__progress-fill"></div></div>
+          <button class="vplayer__btn" data-vplayer-mute aria-label="Звук"></button>
+          <button class="vplayer__btn" data-vplayer-fullscreen aria-label="Во весь экран"></button>
+        </div>
+      </div>
     </div>
   </section>
 
   <section class="tiktok-slide">
     <div class="tiktok-slide__inner">
-      <blockquote class="tiktok-embed" cite="https://www.tiktok.com/@kuufamtndew/video/7166154897157557506" data-video-id="7166154897157557506" style="max-width: 325px; min-width: 288px;">
-        <section><a target="_blank" href="https://www.tiktok.com/@kuufamtndew?refer=embed">@kuufamtndew</a></section>
-      </blockquote>
-    </div>
-  </section>
-
-  <section class="tiktok-slide tiktok-slide--profile">
-    <div class="tiktok-slide__inner">
-      <blockquote class="tiktok-embed" cite="https://www.tiktok.com/@kuufamtndew" data-unique-id="kuufamtndew" data-embed-type="creator" style="max-width: 780px; min-width: 288px;">
-        <section>
-          <a target="_blank" href="https://www.tiktok.com/@kuufamtndew?refer=creator_embed">@kuufamtndew</a>
-        </section>
-      </blockquote>
+      <div class="vplayer">
+        <span class="vplayer__index">05</span>
+        <video class="vplayer__video" src="videos/tiktok-05.mp4" loop playsinline preload="metadata"></video>
+        <div class="vplayer__fallback">Файл не найден<br><code>videos/tiktok-05.mp4</code></div>
+        <div class="vplayer__overlay"></div>
+        <div class="vplayer__playicon"></div>
+        <div class="vplayer__controls">
+          <button class="vplayer__btn" data-vplayer-play aria-label="Play/Pause"></button>
+          <div class="vplayer__progress"><div class="vplayer__progress-fill"></div></div>
+          <button class="vplayer__btn" data-vplayer-mute aria-label="Звук"></button>
+          <button class="vplayer__btn" data-vplayer-fullscreen aria-label="Во весь экран"></button>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -96,7 +146,6 @@
   </div>
 </footer>
 
-<script async src="https://www.tiktok.com/embed.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
