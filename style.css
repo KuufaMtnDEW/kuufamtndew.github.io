@@ -221,10 +221,11 @@ a{ color:inherit; text-decoration:none; }
 .nav__dropdown.is-open .nav__dropdown-trigger{ color:var(--text); }
 .nav__dropdown.is-open .nav__dropdown-trigger::before{ transform:rotate(180deg); }
 .nav__dropdown-trigger.is-active{ color:var(--text); }
-.nav__dropdown-trigger.is-active::after{
+.nav__dropdown-trigger-label{ position:relative; }
+.nav__dropdown-trigger.is-active .nav__dropdown-trigger-label::after{
   content:"";
   position:absolute;
-  left:0; right:14px; bottom:-6px;
+  left:0; right:0; bottom:-10px;
   height:2px;
   background:var(--accent);
   box-shadow:0 0 8px var(--accent);
@@ -1069,7 +1070,7 @@ footer{
   align-self:center;
 }
 .contact-form__privacy{
-  margin-top:14px;
+  margin:14px auto 0;
   max-width:480px;
   color:var(--muted);
   font-size:13px;
