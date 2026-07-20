@@ -200,6 +200,7 @@
       if (fsBtn) fsBtn.innerHTML = ICON_FS;
 
       video.addEventListener('error', () => wrap.classList.add('has-error'));
+      video.addEventListener('play', () => wrap.classList.add('has-played'), { once: true });
 
       video.addEventListener('loadedmetadata', () => {
         if (video.videoWidth && video.videoHeight) {
