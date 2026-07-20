@@ -961,7 +961,8 @@ footer{
   flex-direction:column;
   gap:14px;
   max-width:480px;
-  margin-top:26px;
+  margin:26px auto 0;
+  text-align:left;
 }
 .contact-form input,
 .contact-form textarea{
@@ -984,7 +985,7 @@ footer{
   border-color:var(--accent);
 }
 .contact-form button{
-  align-self:flex-start;
+  align-self:center;
 }
 .contact-form__note{
   margin-top:26px;
