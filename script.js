@@ -83,6 +83,7 @@
   // ------------------------------------------------------------
   function mountPage() {
     setActiveNavLink();
+    initNavDropdown();
     initHeroPin();
     initVideoPlayers();
     if (updateScrollColor) updateScrollColor();
@@ -92,7 +93,35 @@
     const page = document.body.dataset.page;
     if (!page) return;
     const link = document.querySelector(`.nav__links a[data-page="${page}"]`);
-    if (link) link.setAttribute('aria-current', 'page');
+    if (link) {
+      link.setAttribute('aria-current', 'page');
+      const trigger = link.closest('.nav__dropdown')?.querySelector('.nav__dropdown-trigger');
+      if (trigger) trigger.classList.add('is-active');
+    }
+  }
+
+  function initNavDropdown() {
+    const dropdown = document.querySelector('.nav__dropdown');
+    if (!dropdown) return;
+    const trigger = dropdown.querySelector('.nav__dropdown-trigger');
+    if (!trigger) return;
+
+    function closeDropdown() {
+      dropdown.classList.remove('is-open');
+      trigger.setAttribute('aria-expanded', 'false');
+    }
+    function toggleDropdown(e) {
+      e.stopPropagation();
+      const isOpen = dropdown.classList.toggle('is-open');
+      trigger.setAttribute('aria-expanded', String(isOpen));
+    }
+    trigger.addEventListener('click', toggleDropdown);
+    document.addEventListener('click', (e) => {
+      if (!dropdown.contains(e.target)) closeDropdown();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeDropdown();
+    });
   }
 
   // ---- pinned hero: crossfade scene-1 -> scene-2 while scrolling ----

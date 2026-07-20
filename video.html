@@ -5,6 +5,40 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Video — KUUFA</title>
 <meta name="description" content="Видео Kuufa — свой плеер, свой хостинг, без сторонних платформ.">
+<link rel="canonical" href="https://kuufamtndew.github.io/video.html">
+
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="KUUFA">
+<meta property="og:title" content="Video — KUUFA">
+<meta property="og:description" content="Видео Kuufa — свой плеер, свой хостинг, без сторонних платформ.">
+<meta property="og:image" content="https://kuufamtndew.github.io/images/og-image.png">
+<meta property="og:url" content="https://kuufamtndew.github.io/video.html">
+<meta property="og:locale" content="ru_RU">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Video — KUUFA">
+<meta name="twitter:description" content="Видео Kuufa — свой плеер, свой хостинг, без сторонних платформ.">
+<meta name="twitter:image" content="https://kuufamtndew.github.io/images/og-image.png">
+
+<!-- Google Search Console: replace CODE with the value Google gives you, then verify -->
+<!-- <meta name="google-site-verification" content="CODE"> -->
+<!-- Yandex Webmaster: replace CODE with the value Yandex gives you, then verify -->
+<!-- <meta name="yandex-verification" content="CODE"> -->
+
+<!-- Google Analytics (GA4) — uncomment and put your Measurement ID once you have it
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XXXXXXXXXX');
+</script>
+-->
+
 <link rel="stylesheet" href="style.css">
 </head>
 <body data-page="video">
@@ -28,9 +62,14 @@
   </a>
   <div class="nav__links">
     <a href="index.html" data-page="home">Home</a>
-    <a href="portfolio.html" data-page="portfolio">Portfolio</a>
+    <div class="nav__dropdown">
+      <button type="button" class="nav__dropdown-trigger" aria-haspopup="true" aria-expanded="false">Portfolio</button>
+      <div class="nav__dropdown-menu">
+        <a href="portfolio.html" data-page="portfolio">Фото</a>
+        <a href="video.html" data-page="video">Видео</a>
+      </div>
+    </div>
     <a href="about.html" data-page="about">About</a>
-    <a href="video.html" data-page="video">Video</a>
     <a href="contact.html" data-page="contact">Связь</a>
   </div>
 </nav>
@@ -51,6 +90,25 @@
       видео — без обрезки под "формат тиктока").
     -->
     <div class="video-list">
+
+      <div class="video-list__item">
+        <div class="vplayer">
+          <video class="vplayer__video" src="videos/video-00.mp4" playsinline preload="metadata"></video>
+          <div class="vplayer__fallback">Файл не найден<br><code>videos/video-00.mp4</code></div>
+          <div class="vplayer__overlay"></div>
+          <div class="vplayer__playicon"></div>
+          <div class="vplayer__controls">
+            <button class="vplayer__btn" data-vplayer-play aria-label="Play/Pause"></button>
+            <div class="vplayer__progress">
+              <div class="vplayer__progress-fill"></div>
+              <div class="vplayer__progress-thumb"></div>
+            </div>
+            <span class="vplayer__time" data-vplayer-time>0:00 / 0:00</span>
+            <button class="vplayer__btn" data-vplayer-mute aria-label="Звук"></button>
+            <button class="vplayer__btn" data-vplayer-fullscreen aria-label="Во весь экран"></button>
+          </div>
+        </div>
+      </div>
 
       <div class="video-list__item">
         <div class="vplayer">
@@ -122,5 +180,6 @@
 </footer>
 
 <script src="script.js"></script>
+<script data-goatcounter="https://kuufa.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </body>
 </html>
