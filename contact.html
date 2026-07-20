@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Связь — KUUFA</title>
+<meta name="description" content="Написать Евгению (Kuufa) напрямую — форма связи.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-page="contact">
+
+<div class="backdrop"></div>
+<canvas id="fx" class="fx-canvas"></canvas>
+<div class="grain"></div>
+<div class="scanlines"></div>
+
+<div class="rail rail--left" aria-hidden="true">
+  <div class="rail__track">KUUFA — ВИДЕОМОНТАЖ / ДИЗАЙН — KUUFA — ВИДЕОМОНТАЖ / ДИЗАЙН — </div>
+</div>
+<div class="rail rail--right" aria-hidden="true">
+  <div class="rail__track">TIKTOK / TELEGRAM — SINCE 2019 — TIKTOK / TELEGRAM — SINCE 2019 — </div>
+</div>
+
+<nav class="nav">
+  <a href="index.html" class="nav__brand">
+    <span class="nav__brand-mark"></span>
+    KUUFA
+  </a>
+  <div class="nav__links">
+    <a href="index.html" data-page="home">Home</a>
+    <a href="portfolio.html" data-page="portfolio">Portfolio</a>
+    <a href="about.html" data-page="about">About</a>
+    <a href="video.html" data-page="video">Video</a>
+    <a href="contact.html" data-page="contact">Связь</a>
+  </div>
+</nav>
+
+<main>
+  <section class="section" style="border-top:none; padding-top:70px;">
+    <div class="eyebrow">contact</div>
+    <h2 class="section__title">Связь</h2>
+    <p class="lede">Есть идея, заказ или просто хочешь написать — форма ниже отправит сообщение мне на почту напрямую.</p>
+
+    <form class="contact-form" action="https://formspree.io/f/xaqrjzaj" method="POST">
+      <input type="text" name="name" placeholder="Имя" required>
+      <input type="email" name="email" placeholder="Ваш email" required>
+      <textarea name="message" placeholder="Сообщение" rows="5" required></textarea>
+      <input type="text" name="_gotcha" style="display:none" tabindex="-1" autocomplete="off">
+      <button type="submit" class="btn btn--solid">Отправить</button>
+    </form>
+    <p class="contact-form__note" id="contact-note" hidden>Сообщение отправлено — спасибо, отвечу в ближайшее время.</p>
+
+    <div class="tool-list" style="margin-top:34px;">
+      <a class="chip" href="https://t.me/kuufabebra" target="_blank" rel="noopener" style="text-decoration:none;">ТГ: @kuufabebra</a>
+      <a class="chip" href="mailto:kuufa200@gmail.com" style="text-decoration:none;">kuufa200@gmail.com</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <span>© 2026 · Kuufa</span>
+  <div class="footer__socials">
+    <a href="https://www.tiktok.com/@kuufamtndew" target="_blank" rel="noopener">TikTok</a>
+    <a href="https://t.me/mountaindewtown" target="_blank" rel="noopener">Telegram</a>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+<script>
+  const contactForm = document.querySelector('.contact-form');
+  if (contactForm) {
+    contactForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = new FormData(contactForm);
+      const submitBtn = contactForm.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Отправка...';
+      try {
+        const res = await fetch(contactForm.action, {
+          method: 'POST',
+          body: data,
+          headers: { 'Accept': 'application/json' }
+        });
+        if (res.ok) {
+          contactForm.reset();
+          contactForm.hidden = true;
+          document.getElementById('contact-note').hidden = false;
+        } else {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Отправить';
+          alert('Не получилось отправить, попробуй ещё раз или напиши в Telegram.');
+        }
+      } catch (err) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Отправить';
+        alert('Не получилось отправить, попробуй ещё раз или напиши в Telegram.');
+      }
+    });
+  }
+</script>
+</body>
+</html>

@@ -954,3 +954,40 @@ footer{
   border-radius:var(--radius);
   box-shadow:0 20px 50px -22px rgba(0,0,0,0.6);
 }
+
+/* ---------- contact page — form ---------- */
+.contact-form{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  max-width:480px;
+  margin-top:26px;
+}
+.contact-form input,
+.contact-form textarea{
+  background:rgba(255,255,255,0.04);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:12px 14px;
+  color:var(--text);
+  font-family:inherit;
+  font-size:15px;
+  resize:vertical;
+}
+.contact-form input::placeholder,
+.contact-form textarea::placeholder{
+  color:var(--muted);
+}
+.contact-form input:focus,
+.contact-form textarea:focus{
+  outline:none;
+  border-color:var(--accent);
+}
+.contact-form button{
+  align-self:flex-start;
+}
+.contact-form__note{
+  margin-top:26px;
+  color:var(--accent);
+  font-size:15px;
+}
