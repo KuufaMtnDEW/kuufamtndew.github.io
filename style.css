@@ -690,6 +690,12 @@ main{
   gap:30px;
   margin-top:30px;
 }
+.video-list__item{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+}
 .video-item__label{
   display:flex;
   align-items:baseline;
@@ -707,20 +713,86 @@ main{
 .vplayer{
   position:relative;
   width:100%;
-  max-width:520px;
+  max-width:420px;
   margin:0 auto;
-  aspect-ratio:16/9; /* overridden per-video via JS once real dimensions are known */
+  aspect-ratio:9/16; /* sensible default for phone-shot vertical clips — overridden per-video via JS once real dimensions are known */
   background:#000;
   border:1px solid var(--border);
   border-radius:12px;
   overflow:hidden;
   box-shadow:inset 0 0 0 1px rgba(184,255,61,0.06), 0 24px 60px -24px rgba(0,0,0,0.7);
-  transition:box-shadow .25s ease, border-color .25s ease;
+  transition:transform .45s cubic-bezier(.22,.85,.3,1), box-shadow .35s ease, border-color .25s ease, aspect-ratio .45s ease, max-width .45s ease;
 }
 .vplayer:hover{
   border-color:rgba(184,255,61,0.35);
   box-shadow:inset 0 0 0 1px rgba(184,255,61,0.1), 0 24px 60px -20px rgba(184,255,61,0.18);
 }
+/* "focus zoom" — kicks in on play, lifts the clip above the rest of the
+   page; clicking anywhere outside it shrinks it back down but playback
+   is left completely alone (see initVideoZoom in script.js) */
+.vplayer.is-zoomed{
+  z-index:30;
+  transform:scale(1.21);
+  border-color:rgba(184,255,61,0.5);
+  box-shadow:inset 0 0 0 1px rgba(184,255,61,0.14), 0 34px 80px -20px rgba(0,0,0,0.8), 0 0 0 1px rgba(184,255,61,0.2);
+}
+/* dims the rest of the page while a clip is zoomed in — click it (or
+   anywhere else outside the clip) to shrink the video back down */
+.zoom-backdrop{
+  position:fixed;
+  inset:0;
+  z-index:25;
+  background:rgba(0,0,0,0.25);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .4s ease;
+}
+.zoom-backdrop.is-visible{ opacity:1; }
+
+/* ---------- TikTok-style up/down nav arrows — sit to the right of the
+   clip, only appear once it's zoomed in, and never affect layout width
+   when hidden (so the video doesn't shift when they fade out) ---------- */
+.vplayer-nav{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  opacity:0;
+  transform:translateX(-6px);
+  pointer-events:none;
+  transition:opacity .3s ease, transform .3s ease;
+}
+.video-list__item.is-zoomed-item .vplayer-nav{
+  opacity:1;
+  transform:translateX(0);
+  pointer-events:auto;
+}
+.vplayer-nav__btn{
+  width:46px;
+  height:46px;
+  flex:0 0 auto;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(16,21,21,0.78);
+  border:1px solid var(--border);
+  color:var(--text);
+  cursor:pointer;
+  backdrop-filter:blur(8px);
+  z-index:31; /* stay above the zoomed player and its backdrop */
+  transition:border-color .2s ease, color .2s ease, transform .15s ease, opacity .2s ease;
+}
+.vplayer-nav__btn svg{ width:20px; height:20px; fill:currentColor; }
+.vplayer-nav__btn:hover{ border-color:var(--accent); color:var(--accent); transform:translateY(-2px); }
+.vplayer-nav__btn:disabled{ opacity:0.3; cursor:default; pointer-events:none; }
+
+@media (max-width:640px){
+  .video-list__item{ gap:8px; }
+  .vplayer-nav{ gap:8px; }
+  .vplayer-nav__btn{ width:36px; height:36px; }
+  .vplayer-nav__btn svg{ width:16px; height:16px; }
+}
+
 .vplayer__video{
   position:absolute;
   inset:0;
@@ -774,8 +846,10 @@ main{
   text-transform:uppercase;
   color:var(--muted);
 }
-/* once playback has started once, the cover is gone for good (like a normal poster) */
-.vplayer.has-played .vplayer__cover{
+/* cover is hidden only while actually playing — it comes back on pause
+   and when the clip finishes (is-paused is already toggled correctly for
+   both by syncPlayState below) */
+.vplayer:not(.is-paused) .vplayer__cover{
   opacity:0;
   pointer-events:none;
 }

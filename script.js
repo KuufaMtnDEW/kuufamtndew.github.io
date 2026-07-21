@@ -173,6 +173,8 @@
     const ICON_VOL = '<svg viewBox="0 0 24 24"><path d="M3 10v4h4l5 5V5L7 10H3zm13.5 2a4.5 4.5 0 0 0-2.5-4.03v8.06A4.5 4.5 0 0 0 16.5 12z"/></svg>';
     const ICON_MUTE = '<svg viewBox="0 0 24 24"><path d="M3 10v4h4l5 5V5L7 10H3zm13.59 2 2.71 2.71-1.41 1.41L15.18 13.4l-2.71 2.72-1.41-1.41L13.76 12l-2.7-2.71 1.41-1.41 2.71 2.7 2.71-2.7 1.41 1.41L16.59 12z"/></svg>';
     const ICON_FS = '<svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>';
+    const ICON_UP = '<svg viewBox="0 0 24 24"><path d="M12 8l-6.5 6.5 1.4 1.4L12 10.8l5.1 5.1 1.4-1.4z"/></svg>';
+    const ICON_DOWN = '<svg viewBox="0 0 24 24"><path d="M12 16l6.5-6.5-1.4-1.4L12 13.2l-5.1-5.1-1.4 1.4z"/></svg>';
 
     function fmtTime(sec) {
       if (!isFinite(sec) || sec < 0) sec = 0;
@@ -200,18 +202,78 @@
       if (fsBtn) fsBtn.innerHTML = ICON_FS;
 
       video.addEventListener('error', () => wrap.classList.add('has-error'));
-      video.addEventListener('play', () => wrap.classList.add('has-played'), { once: true });
 
+      // ---- size the card to the clip's real aspect ratio (vertical, square,
+      // landscape — whatever it actually is), instead of leaving it stuck in
+      // the generic default ----
+      let sized = false;
+      function applyRealSize() {
+        if (sized) return;
+        if (!video.videoWidth || !video.videoHeight) return;
+        sized = true;
+        wrap.style.aspectRatio = `${video.videoWidth} / ${video.videoHeight}`;
+        const MAX_W = 520, MAX_H = 640;
+        const ratio = video.videoWidth / video.videoHeight;
+        const w = Math.min(MAX_W, MAX_H * ratio);
+        wrap.style.maxWidth = Math.round(w) + 'px';
+      }
       video.addEventListener('loadedmetadata', () => {
-        if (video.videoWidth && video.videoHeight) {
-          wrap.style.aspectRatio = `${video.videoWidth} / ${video.videoHeight}`;
-          const MAX_W = 520, MAX_H = 640;
-          const ratio = video.videoWidth / video.videoHeight;
-          let w = Math.min(MAX_W, MAX_H * ratio);
-          wrap.style.maxWidth = Math.round(w) + 'px';
-        }
+        applyRealSize();
         if (timeEl) timeEl.textContent = `${fmtTime(0)} / ${fmtTime(video.duration)}`;
       });
+      // some browsers only populate videoWidth/videoHeight a beat later than
+      // loadedmetadata, or the metadata was already cached before this
+      // listener was attached — cover both cases
+      video.addEventListener('loadeddata', applyRealSize);
+      if (video.readyState >= 1) applyRealSize();
+
+      // ---- "focus zoom": pressing play visually lifts this clip above the
+      // rest of the page; clicking anywhere outside it shrinks it back down,
+      // but never pauses it — playback just continues at the smaller size.
+      // Also makes sure only one clip plays at a time — starting this one
+      // pauses whichever other clip was running ----
+      video.addEventListener('play', () => {
+        players.forEach((otherWrap) => {
+          if (otherWrap === wrap) return;
+          otherWrap.classList.remove('is-zoomed');
+          const otherItem = otherWrap.parentElement;
+          if (otherItem) otherItem.classList.remove('is-zoomed-item');
+          const otherVideo = otherWrap.querySelector('.vplayer__video');
+          if (otherVideo && !otherVideo.paused) otherVideo.pause();
+        });
+        wrap.classList.add('is-zoomed');
+        const item = wrap.parentElement;
+        if (item) item.classList.add('is-zoomed-item');
+        setZoomBackdrop(true);
+      });
+
+      // ---- TikTok-style up/down arrows: switch to the neighbouring clip,
+      // smooth-scroll the page to it, and start it playing right away so
+      // the zoom-in/shape change happens while the scroll is still settling ----
+      const item = wrap.closest('.video-list__item');
+      if (item) {
+        const nav = item.querySelector('.vplayer-nav');
+        if (nav) {
+          const prevBtn = nav.querySelector('[data-video-prev]');
+          const nextBtn = nav.querySelector('[data-video-next]');
+          if (prevBtn) prevBtn.innerHTML = ICON_UP;
+          if (nextBtn) nextBtn.innerHTML = ICON_DOWN;
+
+          function goToNeighbour(offset) {
+            const items = Array.from(document.querySelectorAll('.video-list__item'));
+            const idx = items.indexOf(item);
+            const target = items[idx + offset];
+            if (!target) return;
+            const targetVideo = target.querySelector('.vplayer__video');
+            if (!targetVideo) return;
+            video.pause();
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            targetVideo.play().catch(() => {});
+          }
+          if (prevBtn) prevBtn.addEventListener('click', (e) => { e.stopPropagation(); goToNeighbour(-1); });
+          if (nextBtn) nextBtn.addEventListener('click', (e) => { e.stopPropagation(); goToNeighbour(1); });
+        }
+      }
 
       function togglePlay() {
         if (video.paused) { video.play().catch(() => {}); }
@@ -588,11 +650,57 @@
     history.replaceState({ pjax: true }, '', window.location.href);
   }
 
+  // ---- shared dark backdrop that fades in behind a "zoomed" player ----
+  function setZoomBackdrop(visible) {
+    let backdrop = document.querySelector('.zoom-backdrop');
+    if (!backdrop) {
+      backdrop = document.createElement('div');
+      backdrop.className = 'zoom-backdrop';
+      document.body.appendChild(backdrop);
+    }
+    backdrop.classList.toggle('is-visible', visible);
+  }
+
+  // ---- click outside a "zoomed" player shrinks it back down without
+  // touching playback (delegated on document so it survives pjax swaps) ----
+  function initVideoZoomOutsideClick() {
+    document.addEventListener('click', (e) => {
+      document.querySelectorAll('.vplayer.is-zoomed').forEach((wrap) => {
+        if (!wrap.contains(e.target)) {
+          wrap.classList.remove('is-zoomed');
+          const item = wrap.parentElement;
+          if (item) item.classList.remove('is-zoomed-item');
+        }
+      });
+      if (!document.querySelector('.vplayer.is-zoomed')) setZoomBackdrop(false);
+    });
+  }
+
+  // ---- scrolling the page with the mouse wheel also shrinks a "zoomed"
+  // player back down, same as clicking outside it — playback keeps going,
+  // only the zoom/backdrop closes. Listens for 'wheel' specifically (not
+  // 'scroll') so any programmatic/smooth scroll elsewhere on the page
+  // doesn't trigger this — only an actual wheel spin from the user does ----
+  function initVideoZoomWheelClose() {
+    window.addEventListener('wheel', () => {
+      let hadZoomed = false;
+      document.querySelectorAll('.vplayer.is-zoomed').forEach((wrap) => {
+        hadZoomed = true;
+        wrap.classList.remove('is-zoomed');
+        const item = wrap.parentElement;
+        if (item) item.classList.remove('is-zoomed-item');
+      });
+      if (hadZoomed) setZoomBackdrop(false);
+    }, { passive: true });
+  }
+
   // ---- boot ----
   initRails();
   initParticles();
   initBgm();
   initScrollColor();
   initPjaxNav();
+  initVideoZoomOutsideClick();
+  initVideoZoomWheelClose();
   mountPage();
 })();
