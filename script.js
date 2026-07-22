@@ -176,6 +176,17 @@
     const ICON_UP = '<svg viewBox="0 0 24 24"><path d="M12 8l-6.5 6.5 1.4 1.4L12 10.8l5.1 5.1 1.4-1.4z"/></svg>';
     const ICON_DOWN = '<svg viewBox="0 0 24 24"><path d="M12 16l6.5-6.5-1.4-1.4L12 13.2l-5.1-5.1-1.4 1.4z"/></svg>';
 
+    // volume/mute is remembered across clips and page reloads, same idea as the bgm widget
+    const KEY_VOL = 'kuufa-video-volume';
+    const KEY_VMUTED = 'kuufa-video-muted';
+    let storedVideoVol = 1;
+    let storedVideoMuted = false;
+    try {
+      const v = parseFloat(localStorage.getItem(KEY_VOL));
+      if (!isNaN(v)) storedVideoVol = v;
+      storedVideoMuted = localStorage.getItem(KEY_VMUTED) === '1';
+    } catch (e) { /* localStorage unavailable — fall back to defaults */ }
+
     function fmtTime(sec) {
       if (!isFinite(sec) || sec < 0) sec = 0;
       const m = Math.floor(sec / 60);
@@ -189,6 +200,7 @@
       const playIcon = wrap.querySelector('.vplayer__playicon');
       const playBtn = wrap.querySelector('[data-vplayer-play]');
       const muteBtn = wrap.querySelector('[data-vplayer-mute]');
+      const volumeSlider = wrap.querySelector('[data-vplayer-volume]');
       const fsBtn = wrap.querySelector('[data-vplayer-fullscreen]');
       const progress = wrap.querySelector('.vplayer__progress');
       const progressFill = wrap.querySelector('.vplayer__progress-fill');
@@ -198,8 +210,17 @@
 
       playIcon.innerHTML = ICON_PLAY;
       if (playBtn) playBtn.innerHTML = ICON_PAUSE;
-      if (muteBtn) muteBtn.innerHTML = ICON_VOL;
       if (fsBtn) fsBtn.innerHTML = ICON_FS;
+
+      video.volume = storedVideoVol;
+      video.muted = storedVideoMuted;
+      if (volumeSlider) volumeSlider.value = String(storedVideoVol);
+
+      function syncVolumeUI() {
+        const silent = video.muted || video.volume === 0;
+        if (muteBtn) muteBtn.innerHTML = silent ? ICON_MUTE : ICON_VOL;
+      }
+      syncVolumeUI();
 
       video.addEventListener('error', () => wrap.classList.add('has-error'));
 
@@ -294,7 +315,24 @@
         muteBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           video.muted = !video.muted;
-          muteBtn.innerHTML = video.muted ? ICON_MUTE : ICON_VOL;
+          try { localStorage.setItem(KEY_VMUTED, video.muted ? '1' : '0'); } catch (err) {}
+          syncVolumeUI();
+        });
+      }
+
+      if (volumeSlider) {
+        volumeSlider.addEventListener('click', (e) => e.stopPropagation());
+        volumeSlider.addEventListener('input', (e) => {
+          e.stopPropagation();
+          const v = parseFloat(volumeSlider.value);
+          video.volume = v;
+          storedVideoVol = v;
+          if (v > 0 && video.muted) {
+            video.muted = false;
+            try { localStorage.setItem(KEY_VMUTED, '0'); } catch (err) {}
+          }
+          try { localStorage.setItem(KEY_VOL, String(v)); } catch (err) {}
+          syncVolumeUI();
         });
       }
 
