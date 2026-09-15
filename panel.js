@@ -1,7 +1,9 @@
 (() => {
-	
+
 /* =========================================================
    KUUFA Panel — логика (Supabase: Auth + Postgres + Storage)
+   + оконный менеджер в стиле Windows 7 (перетаскивание окон,
+   таскбар, меню "Пуск", сворачивание/разворачивание)
    -----------------------------------------------------------
    ЧТО ЗАПОЛНИТЬ ПЕРЕД ЗАПУСКОМ (см. инструкцию в чате):
    1) SUPABASE_URL       — из настроек проекта (Project Settings → API)
@@ -25,6 +27,7 @@ const loginBtn      = document.getElementById('google-signin-btn');
 const loginError    = document.getElementById('login-error');
 const deniedSignout = document.getElementById('denied-signout-btn');
 const signoutBtn    = document.getElementById('signout-btn');
+const startSignoutBtn = document.getElementById('start-signout-btn');
 
 let currentUser = null;
 let realtimeChannels = [];
@@ -51,6 +54,7 @@ loginBtn.addEventListener('click', async () => {
 
 deniedSignout.addEventListener('click', () => supabase.auth.signOut());
 signoutBtn.addEventListener('click', () => supabase.auth.signOut());
+startSignoutBtn.addEventListener('click', () => supabase.auth.signOut());
 
 async function handleSession(session){
   realtimeChannels.forEach(ch => supabase.removeChannel(ch));
@@ -80,24 +84,12 @@ async function handleSession(session){
   showScreen('app');
   initTasks();
   initNotes();
-  initSeo();
   initFiles();
+  initWindowManager();
 }
 
 supabase.auth.getSession().then(({ data }) => handleSession(data.session));
 supabase.auth.onAuthStateChange((_event, session) => handleSession(session));
-
-// ---------- sidebar navigation ----------
-document.querySelectorAll('.sidebar__item').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.sidebar__item').forEach(b => b.classList.remove('is-active'));
-    btn.classList.add('is-active');
-    const view = btn.dataset.view;
-    document.querySelectorAll('.view').forEach(sec => {
-      sec.hidden = sec.dataset.view !== view;
-    });
-  });
-});
 
 // ---------- helpers ----------
 function fmtDate(iso){
@@ -215,54 +207,6 @@ function initNotes(){
   refetchAndRender('notes', 'created_at', render);
 }
 
-// ---------- SEO-отчёты ----------
-function initSeo(){
-  const form = document.getElementById('seo-form');
-  const projectInput = document.getElementById('seo-project');
-  const metricInput = document.getElementById('seo-metric');
-  const valueInput = document.getElementById('seo-value');
-  const tbody = document.getElementById('seo-table-body');
-
-  function render(rows){
-    tbody.innerHTML = '';
-    if (rows.length === 0){
-      tbody.innerHTML = '<tr class="data-table__empty"><td colspan="5">Записей пока нет</td></tr>';
-    }
-    rows.forEach(r => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td></td><td></td><td></td><td></td>
-        <td><button class="data-table__del" title="Удалить">✕</button></td>
-      `;
-      const cells = tr.querySelectorAll('td');
-      cells[0].textContent = fmtDate(r.created_at);
-      cells[1].textContent = r.project;
-      cells[2].textContent = r.metric;
-      cells[3].textContent = r.value;
-      tr.querySelector('.data-table__del').addEventListener('click', async () => {
-        await supabase.from('seo_reports').delete().eq('id', r.id);
-        refetchAndRender('seo_reports', 'created_at', render);
-      });
-      tbody.appendChild(tr);
-    });
-    document.getElementById('stat-seo').textContent = rows.length;
-  }
-
-  form.onsubmit = async (e) => {
-    e.preventDefault();
-    const project = projectInput.value.trim();
-    const metric = metricInput.value.trim();
-    const value = valueInput.value.trim();
-    if (!project || !metric || !value) return;
-    projectInput.value = ''; metricInput.value = ''; valueInput.value = '';
-    await supabase.from('seo_reports').insert({ project, metric, value, user_id: currentUser.id });
-    refetchAndRender('seo_reports', 'created_at', render);
-  };
-
-  subscribeTable('seo_reports', () => refetchAndRender('seo_reports', 'created_at', render));
-  refetchAndRender('seo_reports', 'created_at', render);
-}
-
 // ---------- Файлы (Supabase Storage) ----------
 function initFiles(){
   const form = document.getElementById('file-form');
@@ -339,6 +283,207 @@ function initFiles(){
   };
 
   render();
+}
+
+// =========================================================
+// Оконный менеджер (в стиле Windows 7)
+// =========================================================
+let windowManagerReady = false;
+
+const WINDOW_TITLES = {
+  dashboard: 'Дашборд',
+  tasks: 'Задачи',
+  notes: 'Заметки',
+  files: 'Файлы',
+  settings: 'Настройки'
+};
+
+function initWindowManager(){
+  if (windowManagerReady) { openWindow('dashboard'); return; }
+  windowManagerReady = true;
+
+  const desktop = document.getElementById('desktop');
+  const windows = Array.from(document.querySelectorAll('.window'));
+  const taskbarTasks = document.getElementById('taskbar-tasks');
+  const startBtn = document.getElementById('start-btn');
+  const startMenu = document.getElementById('start-menu');
+  const clockEl = document.getElementById('taskbar-clock');
+
+  let zTop = 10;
+  const state = {}; // name -> { open, minimized, maximized, taskbarBtn, prevRect }
+
+  windows.forEach(win => {
+    const name = win.dataset.window;
+    state[name] = { open: !win.hidden, minimized: false, maximized: false, taskbarBtn: null, prevRect: null };
+
+    // focus on any interaction with the window
+    win.addEventListener('mousedown', () => focusWindow(name));
+
+    // title bar dragging
+    const handle = win.querySelector('[data-drag-handle]');
+    handle.addEventListener('mousedown', (e) => startDrag(e, win, name));
+    handle.addEventListener('touchstart', (e) => startDrag(e.touches[0], win, name, e), { passive: false });
+
+    // controls
+    win.querySelector('[data-action="min"]').addEventListener('click', (e) => { e.stopPropagation(); minimizeWindow(name); });
+    win.querySelector('[data-action="max"]').addEventListener('click', (e) => { e.stopPropagation(); toggleMaximize(name); });
+    win.querySelector('[data-action="close"]').addEventListener('click', (e) => { e.stopPropagation(); closeWindow(name); });
+    handle.addEventListener('dblclick', () => toggleMaximize(name));
+
+    if (!win.hidden) {
+      createTaskbarButton(name);
+      focusWindow(name);
+    }
+  });
+
+  function getWindow(name){ return windows.find(w => w.dataset.window === name); }
+
+  function createTaskbarButton(name){
+    if (state[name].taskbarBtn) return;
+    const btn = document.createElement('button');
+    btn.className = 'taskbar__task';
+    btn.innerHTML = `<span class="taskbar__task-label">${WINDOW_TITLES[name] || name}</span>`;
+    btn.addEventListener('click', () => {
+      const s = state[name];
+      const win = getWindow(name);
+      const isFront = win.style.zIndex == zTop && !s.minimized;
+      if (s.minimized) {
+        s.minimized = false;
+        win.hidden = false;
+        focusWindow(name);
+      } else if (isFront) {
+        minimizeWindow(name);
+      } else {
+        focusWindow(name);
+      }
+    });
+    taskbarTasks.appendChild(btn);
+    state[name].taskbarBtn = btn;
+  }
+
+  window.openWindow = function openWindow(name){
+    const win = getWindow(name);
+    if (!win) return;
+    const s = state[name];
+    s.open = true;
+    s.minimized = false;
+    win.hidden = false;
+    createTaskbarButton(name);
+    focusWindow(name);
+  };
+
+  function closeWindow(name){
+    const win = getWindow(name);
+    const s = state[name];
+    win.hidden = true;
+    s.open = false;
+    s.minimized = false;
+    if (s.taskbarBtn) { s.taskbarBtn.remove(); s.taskbarBtn = null; }
+  }
+
+  function minimizeWindow(name){
+    const win = getWindow(name);
+    const s = state[name];
+    s.minimized = true;
+    win.hidden = true;
+    if (s.taskbarBtn) s.taskbarBtn.classList.remove('is-active');
+  }
+
+  function toggleMaximize(name){
+    const win = getWindow(name);
+    const s = state[name];
+    if (s.maximized) {
+      win.classList.remove('is-maximized');
+      if (s.prevRect) {
+        win.style.top = s.prevRect.top;
+        win.style.left = s.prevRect.left;
+        win.style.width = s.prevRect.width;
+        win.style.height = s.prevRect.height;
+      }
+      s.maximized = false;
+    } else {
+      s.prevRect = {
+        top: win.style.top, left: win.style.left,
+        width: win.style.width, height: win.style.height
+      };
+      win.classList.add('is-maximized');
+      s.maximized = true;
+    }
+    focusWindow(name);
+  }
+
+  function focusWindow(name){
+    const win = getWindow(name);
+    if (!win || win.hidden) return;
+    zTop += 1;
+    win.style.zIndex = zTop;
+    windows.forEach(w => w.classList.remove('is-active'));
+    win.classList.add('is-active');
+    Object.entries(state).forEach(([n, s]) => {
+      if (s.taskbarBtn) s.taskbarBtn.classList.toggle('is-active', n === name && !s.minimized);
+    });
+  }
+
+  function startDrag(startEvent, win, name, originalEvent){
+    if (win.classList.contains('is-maximized')) return;
+    if (originalEvent) originalEvent.preventDefault();
+    focusWindow(name);
+
+    const desktopRect = desktop.getBoundingClientRect();
+    const winRect = win.getBoundingClientRect();
+    const offsetX = startEvent.clientX - winRect.left;
+    const offsetY = startEvent.clientY - winRect.top;
+
+    function onMove(e){
+      const point = e.touches ? e.touches[0] : e;
+      let newLeft = point.clientX - desktopRect.left - offsetX;
+      let newTop = point.clientY - desktopRect.top - offsetY;
+      newLeft = Math.max(-winRect.width + 80, Math.min(newLeft, desktopRect.width - 40));
+      newTop = Math.max(0, Math.min(newTop, desktopRect.height - 32));
+      win.style.left = newLeft + 'px';
+      win.style.top = newTop + 'px';
+    }
+    function onUp(){
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onUp);
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onUp);
+  }
+
+  // ---------- desktop icons + start menu apps open windows ----------
+  document.querySelectorAll('[data-open]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      window.openWindow(btn.dataset.open);
+      closeStartMenu();
+    });
+  });
+
+  // ---------- start menu toggle ----------
+  function openStartMenu(){ startMenu.hidden = false; startBtn.setAttribute('aria-expanded', 'true'); }
+  function closeStartMenu(){ startMenu.hidden = true; startBtn.setAttribute('aria-expanded', 'false'); }
+  startBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    startMenu.hidden ? openStartMenu() : closeStartMenu();
+  });
+  document.addEventListener('click', (e) => {
+    if (!startMenu.hidden && !startMenu.contains(e.target) && e.target !== startBtn) closeStartMenu();
+  });
+
+  // ---------- clock ----------
+  function tickClock(){
+    const now = new Date();
+    clockEl.textContent = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  }
+  tickClock();
+  setInterval(tickClock, 15000);
+
+  // open dashboard by default
+  openWindow('dashboard');
 }
 
 })();

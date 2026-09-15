@@ -43,128 +43,95 @@
   </div>
 </div>
 
-<!-- ============ САМА ПАНЕЛЬ ============ -->
-<div id="app" class="app" hidden>
+<!-- ============ РАБОЧИЙ СТОЛ (Windows 7-style) ============ -->
+<div id="app" class="win7" hidden>
 
-  <aside class="sidebar">
-    <div class="sidebar__brand">
-      <span class="sidebar__brand-mark"></span>
-      KUUFA <span class="sidebar__brand-sub">/ panel</span>
+  <div class="wallpaper"></div>
+
+  <div class="desktop" id="desktop">
+
+    <!-- ---- значки рабочего стола ---- -->
+    <div class="desktop-icons">
+      <button class="dicon" data-open="dashboard">
+        <span class="dicon__img" data-ico="dashboard"></span>
+        <span class="dicon__label">Дашборд</span>
+      </button>
+      <button class="dicon" data-open="tasks">
+        <span class="dicon__img" data-ico="tasks"></span>
+        <span class="dicon__label">Задачи</span>
+      </button>
+      <button class="dicon" data-open="notes">
+        <span class="dicon__img" data-ico="notes"></span>
+        <span class="dicon__label">Заметки</span>
+      </button>
+      <button class="dicon" data-open="files">
+        <span class="dicon__img" data-ico="files"></span>
+        <span class="dicon__label">Файлы</span>
+      </button>
+      <button class="dicon" data-open="settings">
+        <span class="dicon__img" data-ico="settings"></span>
+        <span class="dicon__label">Настройки</span>
+      </button>
     </div>
 
-    <nav class="sidebar__nav">
-      <button class="sidebar__item is-active" data-view="dashboard">
-        <span class="sidebar__item-ico" data-ico="dashboard"></span> Дашборд
-      </button>
-      <button class="sidebar__item" data-view="seo">
-        <span class="sidebar__item-ico" data-ico="seo"></span> SEO-отчёты
-      </button>
-      <button class="sidebar__item" data-view="tasks">
-        <span class="sidebar__item-ico" data-ico="tasks"></span> Задачи
-      </button>
-      <button class="sidebar__item" data-view="notes">
-        <span class="sidebar__item-ico" data-ico="notes"></span> Заметки
-      </button>
-      <button class="sidebar__item" data-view="files">
-        <span class="sidebar__item-ico" data-ico="files"></span> Файлы
-      </button>
-      <button class="sidebar__item" data-view="settings">
-        <span class="sidebar__item-ico" data-ico="settings"></span> Настройки
-      </button>
-    </nav>
-
-    <div class="sidebar__user">
-      <img id="user-avatar" class="sidebar__avatar" src="" alt="" referrerpolicy="no-referrer">
-      <div class="sidebar__user-info">
-        <span id="user-name" class="sidebar__user-name">—</span>
-        <span id="user-email" class="sidebar__user-email">—</span>
+    <!-- ---- окно: Дашборд ---- -->
+    <div class="window" data-window="dashboard" style="top:64px; left:280px; width:600px; height:440px;">
+      <div class="window__titlebar" data-drag-handle>
+        <span class="window__ico" data-ico="dashboard"></span>
+        <span class="window__title">Дашборд</span>
+        <div class="window__controls">
+          <button class="window__ctrl" data-action="min" aria-label="Свернуть">&#8211;</button>
+          <button class="window__ctrl" data-action="max" aria-label="Развернуть">&#9633;</button>
+          <button class="window__ctrl window__ctrl--close" data-action="close" aria-label="Закрыть">&times;</button>
+        </div>
       </div>
-    </div>
-  </aside>
-
-  <main class="content">
-
-    <!-- ---- Дашборд ---- -->
-    <section class="view" data-view="dashboard">
-      <header class="view__head">
-        <h1 class="view__title">Дашборд</h1>
+      <div class="window__body">
         <p class="view__sub">Общая сводка. Разделы ниже — заготовки, наполним под твоё ТЗ.</p>
-      </header>
 
-      <div class="card-grid">
-        <div class="stat-card">
-          <span class="stat-card__label">Задач активно</span>
-          <span id="stat-tasks-open" class="stat-card__num">—</span>
+        <div class="card-grid">
+          <div class="stat-card">
+            <span class="stat-card__label">Задач активно</span>
+            <span id="stat-tasks-open" class="stat-card__num">—</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-card__label">Задач закрыто</span>
+            <span id="stat-tasks-done" class="stat-card__num">—</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-card__label">Заметок</span>
+            <span id="stat-notes" class="stat-card__num">—</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-card__label">Файлов</span>
+            <span id="stat-files" class="stat-card__num">—</span>
+          </div>
         </div>
-        <div class="stat-card">
-          <span class="stat-card__label">Задач закрыто</span>
-          <span id="stat-tasks-done" class="stat-card__num">—</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-card__label">Заметок</span>
-          <span id="stat-notes" class="stat-card__num">—</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-card__label">SEO-записей</span>
-          <span id="stat-seo" class="stat-card__num">—</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-card__label">Файлов</span>
-          <span id="stat-files" class="stat-card__num">—</span>
-        </div>
-      </div>
 
-      <div class="panel-block">
-        <h2 class="panel-block__title">Быстрые ссылки</h2>
-        <div class="quicklinks">
-          <a href="https://search.google.com/search-console" target="_blank" rel="noopener" class="chip-link">Search Console</a>
-          <a href="https://webmaster.yandex.ru" target="_blank" rel="noopener" class="chip-link">Яндекс.Вебмастер</a>
-          <a href="https://analytics.google.com" target="_blank" rel="noopener" class="chip-link">Google Analytics</a>
-          <a href="index.html" class="chip-link">Сайт KUUFA →</a>
+        <div class="panel-block">
+          <h2 class="panel-block__title">Быстрые ссылки</h2>
+          <div class="quicklinks">
+            <a href="https://search.google.com/search-console" target="_blank" rel="noopener" class="chip-link">Search Console</a>
+            <a href="https://webmaster.yandex.ru" target="_blank" rel="noopener" class="chip-link">Яндекс.Вебмастер</a>
+            <a href="https://analytics.google.com" target="_blank" rel="noopener" class="chip-link">Google Analytics</a>
+            <a href="index.html" class="chip-link">Сайт KUUFA →</a>
+          </div>
         </div>
       </div>
-    </section>
+      <div class="window__resize" data-resize-handle></div>
+    </div>
 
-    <!-- ---- SEO-отчёты ---- -->
-    <section class="view" data-view="seo" hidden>
-      <header class="view__head">
-        <h1 class="view__title">SEO-отчёты</h1>
-        <p class="view__sub">Каркас таблицы отчётов. Когда пришлёшь ТЗ — сделаю под конкретные метрики (позиции, трафик, источники и т.д).</p>
-      </header>
-
-      <div class="panel-block">
-        <form id="seo-form" class="inline-form">
-          <input type="text" id="seo-project" placeholder="Проект / URL" required>
-          <input type="text" id="seo-metric" placeholder="Метрика (напр. позиции)" required>
-          <input type="text" id="seo-value" placeholder="Значение" required>
-          <button type="submit" class="btn-accent-panel">Добавить</button>
-        </form>
-
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Дата</th>
-              <th>Проект</th>
-              <th>Метрика</th>
-              <th>Значение</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="seo-table-body">
-            <tr class="data-table__empty"><td colspan="5">Записей пока нет</td></tr>
-          </tbody>
-        </table>
+    <!-- ---- окно: Задачи ---- -->
+    <div class="window" data-window="tasks" style="top:100px; left:340px; width:420px; height:460px;" hidden>
+      <div class="window__titlebar" data-drag-handle>
+        <span class="window__ico" data-ico="tasks"></span>
+        <span class="window__title">Задачи</span>
+        <div class="window__controls">
+          <button class="window__ctrl" data-action="min" aria-label="Свернуть">&#8211;</button>
+          <button class="window__ctrl" data-action="max" aria-label="Развернуть">&#9633;</button>
+          <button class="window__ctrl window__ctrl--close" data-action="close" aria-label="Закрыть">&times;</button>
+        </div>
       </div>
-    </section>
-
-    <!-- ---- Задачи ---- -->
-    <section class="view" data-view="tasks" hidden>
-      <header class="view__head">
-        <h1 class="view__title">Задачи</h1>
-        <p class="view__sub">Простой список дел, синхронизируется с базой.</p>
-      </header>
-
-      <div class="panel-block">
+      <div class="window__body">
         <form id="task-form" class="inline-form">
           <input type="text" id="task-input" placeholder="Новая задача…" required>
           <button type="submit" class="btn-accent-panel">Добавить</button>
@@ -173,16 +140,21 @@
           <li class="item-list__empty">Задач пока нет</li>
         </ul>
       </div>
-    </section>
+      <div class="window__resize" data-resize-handle></div>
+    </div>
 
-    <!-- ---- Заметки ---- -->
-    <section class="view" data-view="notes" hidden>
-      <header class="view__head">
-        <h1 class="view__title">Заметки</h1>
-        <p class="view__sub">Быстрые записи — рабочие мысли, идеи, черновики.</p>
-      </header>
-
-      <div class="panel-block">
+    <!-- ---- окно: Заметки ---- -->
+    <div class="window" data-window="notes" style="top:130px; left:400px; width:480px; height:460px;" hidden>
+      <div class="window__titlebar" data-drag-handle>
+        <span class="window__ico" data-ico="notes"></span>
+        <span class="window__title">Заметки</span>
+        <div class="window__controls">
+          <button class="window__ctrl" data-action="min" aria-label="Свернуть">&#8211;</button>
+          <button class="window__ctrl" data-action="max" aria-label="Развернуть">&#9633;</button>
+          <button class="window__ctrl window__ctrl--close" data-action="close" aria-label="Закрыть">&times;</button>
+        </div>
+      </div>
+      <div class="window__body">
         <form id="note-form" class="inline-form inline-form--stack">
           <textarea id="note-input" rows="3" placeholder="Текст заметки…" required></textarea>
           <button type="submit" class="btn-accent-panel">Сохранить</button>
@@ -191,16 +163,22 @@
           <p class="item-list__empty">Заметок пока нет</p>
         </div>
       </div>
-    </section>
+      <div class="window__resize" data-resize-handle></div>
+    </div>
 
-    <!-- ---- Файлы ---- -->
-    <section class="view" data-view="files" hidden>
-      <header class="view__head">
-        <h1 class="view__title">Файлы</h1>
+    <!-- ---- окно: Файлы ---- -->
+    <div class="window" data-window="files" style="top:160px; left:460px; width:460px; height:460px;" hidden>
+      <div class="window__titlebar" data-drag-handle>
+        <span class="window__ico" data-ico="files"></span>
+        <span class="window__title">Файлы</span>
+        <div class="window__controls">
+          <button class="window__ctrl" data-action="min" aria-label="Свернуть">&#8211;</button>
+          <button class="window__ctrl" data-action="max" aria-label="Развернуть">&#9633;</button>
+          <button class="window__ctrl window__ctrl--close" data-action="close" aria-label="Закрыть">&times;</button>
+        </div>
+      </div>
+      <div class="window__body">
         <p class="view__sub">Хранилище Supabase Storage — видно и доступно только тебе.</p>
-      </header>
-
-      <div class="panel-block">
         <form id="file-form" class="inline-form">
           <input type="file" id="file-input" required>
           <button type="submit" class="btn-accent-panel">Загрузить</button>
@@ -210,16 +188,21 @@
           <li class="item-list__empty">Файлов пока нет</li>
         </ul>
       </div>
-    </section>
+      <div class="window__resize" data-resize-handle></div>
+    </div>
 
-    <!-- ---- Настройки ---- -->
-    <section class="view" data-view="settings" hidden>
-      <header class="view__head">
-        <h1 class="view__title">Настройки</h1>
-        <p class="view__sub">Аккаунт и доступ.</p>
-      </header>
-
-      <div class="panel-block">
+    <!-- ---- окно: Настройки ---- -->
+    <div class="window" data-window="settings" style="top:190px; left:520px; width:380px; height:280px;" hidden>
+      <div class="window__titlebar" data-drag-handle>
+        <span class="window__ico" data-ico="settings"></span>
+        <span class="window__title">Настройки</span>
+        <div class="window__controls">
+          <button class="window__ctrl" data-action="min" aria-label="Свернуть">&#8211;</button>
+          <button class="window__ctrl" data-action="max" aria-label="Развернуть">&#9633;</button>
+          <button class="window__ctrl window__ctrl--close" data-action="close" aria-label="Закрыть">&times;</button>
+        </div>
+      </div>
+      <div class="window__body">
         <div class="settings-row">
           <span class="settings-row__label">Аккаунт</span>
           <span id="settings-email" class="settings-row__value">—</span>
@@ -230,9 +213,45 @@
         </div>
         <button id="signout-btn" class="btn-ghost-panel" style="margin-top:20px;">Выйти из аккаунта</button>
       </div>
-    </section>
+      <div class="window__resize" data-resize-handle></div>
+    </div>
 
-  </main>
+  </div>
+
+  <!-- ---- панель задач ---- -->
+  <div class="taskbar">
+    <button id="start-btn" class="taskbar__start" type="button" aria-haspopup="true" aria-expanded="false">
+      <span class="taskbar__start-orb"></span>
+      <span class="taskbar__start-label">Пуск</span>
+    </button>
+
+    <div id="start-menu" class="start-menu" hidden>
+      <div class="start-menu__user">
+        <img id="user-avatar" class="start-menu__avatar" src="" alt="" referrerpolicy="no-referrer">
+        <div class="start-menu__user-info">
+          <span id="user-name" class="start-menu__user-name">—</span>
+          <span id="user-email" class="start-menu__user-email">—</span>
+        </div>
+      </div>
+      <div class="start-menu__apps">
+        <button class="start-menu__app" data-open="dashboard"><span class="dicon__img" data-ico="dashboard"></span>Дашборд</button>
+        <button class="start-menu__app" data-open="tasks"><span class="dicon__img" data-ico="tasks"></span>Задачи</button>
+        <button class="start-menu__app" data-open="notes"><span class="dicon__img" data-ico="notes"></span>Заметки</button>
+        <button class="start-menu__app" data-open="files"><span class="dicon__img" data-ico="files"></span>Файлы</button>
+        <button class="start-menu__app" data-open="settings"><span class="dicon__img" data-ico="settings"></span>Настройки</button>
+      </div>
+      <div class="start-menu__footer">
+        <button id="start-signout-btn" class="start-menu__signout">Выйти из аккаунта</button>
+      </div>
+    </div>
+
+    <div id="taskbar-tasks" class="taskbar__tasks"></div>
+
+    <div class="taskbar__tray">
+      <span id="taskbar-clock" class="taskbar__clock">—:—</span>
+    </div>
+  </div>
+
 </div>
 
 <!-- Supabase SDK (без сборки — подходит для GitHub Pages) -->
