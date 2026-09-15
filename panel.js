@@ -57,6 +57,8 @@ async function handleSession(session){
   realtimeChannels = [];
 
   const user = session?.user || null;
+  console.log('SESSION:', session);
+  console.log('USER:', user);
 
   if (!user) {
     currentUser = null;
