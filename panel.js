@@ -40,7 +40,7 @@ loginBtn.addEventListener('click', async () => {
   loginError.hidden = true;
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: window.location.href }
+    options: { redirectTo: 'https://kuufamtndew.github.io/panel.html' }
   });
   if (error) {
     console.error(error);
