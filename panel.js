@@ -78,11 +78,15 @@ async function handleSession(session){
   document.getElementById('settings-email').textContent = user.email;
 
   showScreen('app');
-  console.log('ПЕРЕХОД В APP');
+  console.log('APP ПОКАЗАН');
   initTasks();
+  console.log('TASKS OK');
   initNotes();
+  console.log('NOTES OK');
   initSeo();
+  console.log('SEO OK');
   initFiles();
+  console.log('FILES OK');
 }
 
 supabase.auth.getSession().then(({ data }) => handleSession(data.session));
