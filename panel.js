@@ -255,7 +255,35 @@ const FM = (() => {
     if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' МБ';
     return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' ГБ';
   }
-  function safeName(name){ return name.replace(/[\\/]/g, '-').trim(); }
+  const TRANSLIT = {
+    а:'a',б:'b',в:'v',г:'g',д:'d',е:'e',ё:'e',ж:'zh',з:'z',и:'i',й:'y',
+    к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',
+    х:'h',ц:'ts',ч:'ch',ш:'sh',щ:'sch',ъ:'',ы:'y',ь:'',э:'e',ю:'yu',я:'ya'
+  };
+  // человеко-читаемое имя -> безопасный ключ для Storage (только латиница/цифры/._-)
+  function safeName(name){
+    const trimmed = (name || '').trim();
+    let out = '';
+    for (const ch of trimmed.toLowerCase()){
+      if (TRANSLIT[ch] !== undefined) out += TRANSLIT[ch];
+      else if (/[a-z0-9._-]/.test(ch)) out += ch;
+      else if (ch === ' ') out += '_';
+      else out += '-';
+    }
+    out = out.replace(/-{2,}/g, '-').replace(/_{2,}/g, '_').replace(/^[.\-_]+|[.\-_]+$/g, '');
+    return out || 'file';
+  }
+  // делаем ключ уникальным в пределах папки, если такое имя уже занято другим файлом
+  function uniqueName(base, existingNames){
+    if (!existingNames.has(base)) return base;
+    const dot = base.lastIndexOf('.');
+    const stem = dot > 0 ? base.slice(0, dot) : base;
+    const suffix = dot > 0 ? base.slice(dot) : '';
+    let i = 2;
+    let candidate = `${stem}-${i}${suffix}`;
+    while (existingNames.has(candidate)){ i++; candidate = `${stem}-${i}${suffix}`; }
+    return candidate;
+  }
 
   function status(text, isError){
     if (!text) { el.status.hidden = true; return; }
@@ -515,7 +543,10 @@ const FM = (() => {
   }
 
   async function rename(item){
-    const next = safeName(prompt('Новое имя', item.name) || '');
+    const typed = prompt('Новое имя', item.name);
+    if (!typed) return;
+    const existing = new Set(entries.filter(x => x.name !== item.name).map(x => x.name));
+    const next = uniqueName(safeName(typed), existing);
     if (!next || next === item.name) return;
     status('Переименовываю…');
     try {
@@ -558,7 +589,10 @@ const FM = (() => {
   }
 
   async function createFolder(){
-    const name = safeName(prompt('Название папки', 'Новая папка') || '');
+    const typed = prompt('Название папки', 'Новая папка');
+    if (!typed) return;
+    const existing = new Set(entries.map(x => x.name));
+    const name = uniqueName(safeName(typed), existing);
     if (!name) return;
     status('Создаю папку…');
     try {
@@ -577,11 +611,14 @@ const FM = (() => {
     el.progress.hidden = false;
     let done = 0;
     const failed = [];
+    const existing = new Set(entries.map(x => x.name));
 
     for (const file of files){
       status(`Загружаю ${done + 1} из ${files.length}: ${file.name}`);
+      const key = uniqueName(safeName(file.name), existing);
+      existing.add(key);
       const { error } = await supabase.storage.from(FILES_BUCKET)
-        .upload(`${fullPath()}/${safeName(file.name)}`, file, { upsert: true, contentType: file.type || undefined });
+        .upload(`${fullPath()}/${key}`, file, { upsert: true, contentType: file.type || undefined });
       if (error) failed.push(`${file.name}: ${error.message}`);
       done++;
       el.progressBar.style.width = Math.round(done / files.length * 100) + '%';
