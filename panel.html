@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1B2224">
+<title>Panel — KUUFA</title>
+<meta name="robots" content="noindex, nofollow">
+
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+<link rel="stylesheet" href="panel.css">
+</head>
+<body>
+
+<!-- ============ ЭКРАН ВХОДА ============ -->
+<div id="login-screen" class="login-screen">
+  <div class="login-card">
+    <div class="login-card__mark"></div>
+    <h1 class="login-card__title">KUUFA / Panel</h1>
+    <p class="login-card__sub">Личная панель. Доступ только для владельца.</p>
+    <button id="google-signin-btn" class="btn-google" type="button">
+      <svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true">
+        <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.6-6 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34.5 5.1 29.5 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.2-.1-2.4-.4-3.5z"/>
+        <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.9 19 13 24 13c3.1 0 5.8 1.1 8 3l6-6C34.5 5.1 29.5 3 24 3 16.3 3 9.7 7.3 6.3 14.7z"/>
+        <path fill="#4CAF50" d="M24 45c5.4 0 10.3-2.1 14-5.5l-6.5-5.4C29.4 35.9 26.8 37 24 37c-5.2 0-9.6-3.4-11.2-8.1l-6.5 5C9.6 40.6 16.2 45 24 45z"/>
+        <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.6l6.5 5.4C41.7 35.9 45 30.5 45 24c0-1.2-.1-2.4-.4-3.5z"/>
+      </svg>
+      Войти через Google
+    </button>
+    <p id="login-error" class="login-card__error" hidden></p>
+  </div>
+</div>
+
+<!-- ============ ЭКРАН "НЕТ ДОСТУПА" ============ -->
+<div id="denied-screen" class="login-screen" hidden>
+  <div class="login-card">
+    <h1 class="login-card__title">Доступ закрыт</h1>
+    <p class="login-card__sub">Этот аккаунт не привязан к панели.</p>
+    <button id="denied-signout-btn" class="btn-ghost-panel" type="button">Выйти</button>
+  </div>
+</div>
+
+<!-- ============ САМА ПАНЕЛЬ ============ -->
+<div id="app" class="app" hidden>
+
+  <aside class="sidebar">
+    <div class="sidebar__brand">
+      <span class="sidebar__brand-mark"></span>
+      KUUFA <span class="sidebar__brand-sub">/ panel</span>
+    </div>
+
+    <nav class="sidebar__nav">
+      <button class="sidebar__item is-active" data-view="dashboard">
+        <span class="sidebar__item-ico" data-ico="dashboard"></span> Дашборд
+      </button>
+      <button class="sidebar__item" data-view="seo">
+        <span class="sidebar__item-ico" data-ico="seo"></span> SEO-отчёты
+      </button>
+      <button class="sidebar__item" data-view="tasks">
+        <span class="sidebar__item-ico" data-ico="tasks"></span> Задачи
+      </button>
+      <button class="sidebar__item" data-view="notes">
+        <span class="sidebar__item-ico" data-ico="notes"></span> Заметки
+      </button>
+      <button class="sidebar__item" data-view="files">
+        <span class="sidebar__item-ico" data-ico="files"></span> Файлы
+      </button>
+      <button class="sidebar__item" data-view="settings">
+        <span class="sidebar__item-ico" data-ico="settings"></span> Настройки
+      </button>
+    </nav>
+
+    <div class="sidebar__user">
+      <img id="user-avatar" class="sidebar__avatar" src="" alt="" referrerpolicy="no-referrer">
+      <div class="sidebar__user-info">
+        <span id="user-name" class="sidebar__user-name">—</span>
+        <span id="user-email" class="sidebar__user-email">—</span>
+      </div>
+    </div>
+  </aside>
+
+  <main class="content">
+
+    <!-- ---- Дашборд ---- -->
+    <section class="view" data-view="dashboard">
+      <header class="view__head">
+        <h1 class="view__title">Дашборд</h1>
+        <p class="view__sub">Общая сводка. Разделы ниже — заготовки, наполним под твоё ТЗ.</p>
+      </header>
+
+      <div class="card-grid">
+        <div class="stat-card">
+          <span class="stat-card__label">Задач активно</span>
+          <span id="stat-tasks-open" class="stat-card__num">—</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card__label">Задач закрыто</span>
+          <span id="stat-tasks-done" class="stat-card__num">—</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card__label">Заметок</span>
+          <span id="stat-notes" class="stat-card__num">—</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card__label">SEO-записей</span>
+          <span id="stat-seo" class="stat-card__num">—</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card__label">Файлов</span>
+          <span id="stat-files" class="stat-card__num">—</span>
+        </div>
+      </div>
+
+      <div class="panel-block">
+        <h2 class="panel-block__title">Быстрые ссылки</h2>
+        <div class="quicklinks">
+          <a href="https://search.google.com/search-console" target="_blank" rel="noopener" class="chip-link">Search Console</a>
+          <a href="https://webmaster.yandex.ru" target="_blank" rel="noopener" class="chip-link">Яндекс.Вебмастер</a>
+          <a href="https://analytics.google.com" target="_blank" rel="noopener" class="chip-link">Google Analytics</a>
+          <a href="index.html" class="chip-link">Сайт KUUFA →</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---- SEO-отчёты ---- -->
+    <section class="view" data-view="seo" hidden>
+      <header class="view__head">
+        <h1 class="view__title">SEO-отчёты</h1>
+        <p class="view__sub">Каркас таблицы отчётов. Когда пришлёшь ТЗ — сделаю под конкретные метрики (позиции, трафик, источники и т.д).</p>
+      </header>
+
+      <div class="panel-block">
+        <form id="seo-form" class="inline-form">
+          <input type="text" id="seo-project" placeholder="Проект / URL" required>
+          <input type="text" id="seo-metric" placeholder="Метрика (напр. позиции)" required>
+          <input type="text" id="seo-value" placeholder="Значение" required>
+          <button type="submit" class="btn-accent-panel">Добавить</button>
+        </form>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Дата</th>
+              <th>Проект</th>
+              <th>Метрика</th>
+              <th>Значение</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="seo-table-body">
+            <tr class="data-table__empty"><td colspan="5">Записей пока нет</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ---- Задачи ---- -->
+    <section class="view" data-view="tasks" hidden>
+      <header class="view__head">
+        <h1 class="view__title">Задачи</h1>
+        <p class="view__sub">Простой список дел, синхронизируется с базой.</p>
+      </header>
+
+      <div class="panel-block">
+        <form id="task-form" class="inline-form">
+          <input type="text" id="task-input" placeholder="Новая задача…" required>
+          <button type="submit" class="btn-accent-panel">Добавить</button>
+        </form>
+        <ul id="task-list" class="item-list">
+          <li class="item-list__empty">Задач пока нет</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ---- Заметки ---- -->
+    <section class="view" data-view="notes" hidden>
+      <header class="view__head">
+        <h1 class="view__title">Заметки</h1>
+        <p class="view__sub">Быстрые записи — рабочие мысли, идеи, черновики.</p>
+      </header>
+
+      <div class="panel-block">
+        <form id="note-form" class="inline-form inline-form--stack">
+          <textarea id="note-input" rows="3" placeholder="Текст заметки…" required></textarea>
+          <button type="submit" class="btn-accent-panel">Сохранить</button>
+        </form>
+        <div id="note-list" class="note-grid">
+          <p class="item-list__empty">Заметок пока нет</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---- Файлы ---- -->
+    <section class="view" data-view="files" hidden>
+      <header class="view__head">
+        <h1 class="view__title">Файлы</h1>
+        <p class="view__sub">Хранилище Supabase Storage — видно и доступно только тебе.</p>
+      </header>
+
+      <div class="panel-block">
+        <form id="file-form" class="inline-form">
+          <input type="file" id="file-input" required>
+          <button type="submit" class="btn-accent-panel">Загрузить</button>
+        </form>
+        <p id="file-upload-status" class="login-card__error" hidden style="color:var(--muted); text-align:left; margin:0 0 14px;"></p>
+        <ul id="file-list" class="item-list">
+          <li class="item-list__empty">Файлов пока нет</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ---- Настройки ---- -->
+    <section class="view" data-view="settings" hidden>
+      <header class="view__head">
+        <h1 class="view__title">Настройки</h1>
+        <p class="view__sub">Аккаунт и доступ.</p>
+      </header>
+
+      <div class="panel-block">
+        <div class="settings-row">
+          <span class="settings-row__label">Аккаунт</span>
+          <span id="settings-email" class="settings-row__value">—</span>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row__label">Доступ</span>
+          <span class="settings-row__value">Владелец (единственный аккаунт с доступом)</span>
+        </div>
+        <button id="signout-btn" class="btn-ghost-panel" style="margin-top:20px;">Выйти из аккаунта</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Supabase SDK (без сборки — подходит для GitHub Pages) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="panel.js"></script>
+</body>
+</html>
