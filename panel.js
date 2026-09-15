@@ -207,83 +207,549 @@ function initNotes(){
   refetchAndRender('notes', 'created_at', render);
 }
 
-// ---------- Файлы (Supabase Storage) ----------
-function initFiles(){
-  const form = document.getElementById('file-form');
-  const input = document.getElementById('file-input');
-  const status = document.getElementById('file-upload-status');
-  const list = document.getElementById('file-list');
-  const folder = currentUser.id;
+// ---------- Файлы: проводник (Supabase Storage) ----------
+let filesInited = false;
 
+function initFiles(){
+  if (filesInited) { FM.reload(); return; }
+  filesInited = true;
+  FM.mount();
+}
+
+const FM = (() => {
+  const PLACEHOLDER = '.keep';
+  const IMAGE_EXT = ['jpg','jpeg','png','gif','webp','avif','svg','bmp','ico'];
+  const TEXT_EXT  = ['txt','md','csv','json','log','js','ts','css','html','xml','yml','yaml','sql','py','sh','ini','env','srt'];
+  const VIDEO_EXT = ['mp4','webm','mov','m4v'];
+  const AUDIO_EXT = ['mp3','wav','ogg','m4a','flac'];
+
+  let path = [];          // текущий путь внутри личной папки
+  let entries = [];       // содержимое текущей папки
+  let viewMode = localStorage.getItem('kuufa-fm-view') || 'grid';
+  let sortMode = 'new';
+  let query = '';
+  let previewList = [];   // файлы, которые можно листать стрелками
+  let previewIndex = -1;
+
+  const el = {};
+
+  function root(){ return currentUser.id; }
+  function fullPath(){ return [root(), ...path].join('/'); }
+  function ext(name){
+    const i = name.lastIndexOf('.');
+    return i > 0 ? name.slice(i + 1).toLowerCase() : '';
+  }
+  function kind(name){
+    const e = ext(name);
+    if (IMAGE_EXT.includes(e)) return 'image';
+    if (TEXT_EXT.includes(e))  return 'text';
+    if (VIDEO_EXT.includes(e)) return 'video';
+    if (AUDIO_EXT.includes(e)) return 'audio';
+    if (e === 'pdf') return 'pdf';
+    return 'other';
+  }
   function fmtSize(bytes){
     if (bytes == null) return '';
     if (bytes < 1024) return bytes + ' Б';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' КБ';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' МБ';
+    if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' МБ';
+    return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' ГБ';
+  }
+  function safeName(name){ return name.replace(/[\\/]/g, '-').trim(); }
+
+  function status(text, isError){
+    if (!text) { el.status.hidden = true; return; }
+    el.status.hidden = false;
+    el.status.textContent = text;
+    el.status.classList.toggle('is-error', !!isError);
   }
 
-  async function render(){
-    const { data, error } = await supabase.storage.from(FILES_BUCKET).list(folder, {
+  // ---------- Storage ----------
+  async function listDir(dir){
+    const { data, error } = await supabase.storage.from(FILES_BUCKET).list(dir, {
+      limit: 1000,
       sortBy: { column: 'created_at', order: 'desc' }
     });
-    if (error) { console.error('files list', error); return; }
+    if (error) throw error;
+    return (data || []).filter(x => x.name !== PLACEHOLDER && x.name !== '.emptyFolderPlaceholder');
+  }
 
-    list.innerHTML = '';
-    if (!data || data.length === 0){
-      list.innerHTML = '<li class="item-list__empty">Файлов пока нет</li>';
-      document.getElementById('stat-files').textContent = 0;
+  // рекурсивный обход — нужен для удаления и переименования папок
+  async function collectFiles(dir){
+    const { data, error } = await supabase.storage.from(FILES_BUCKET).list(dir, { limit: 1000 });
+    if (error) throw error;
+    let out = [];
+    for (const item of (data || [])){
+      const p = `${dir}/${item.name}`;
+      if (item.id === null) out = out.concat(await collectFiles(p));
+      else out.push(p);
+    }
+    return out;
+  }
+
+  async function signed(name, seconds = 3600){
+    const { data, error } = await supabase.storage
+      .from(FILES_BUCKET)
+      .createSignedUrl(`${fullPath()}/${name}`, seconds);
+    if (error) throw error;
+    return data.signedUrl;
+  }
+
+  // ---------- рендер ----------
+  function renderCrumbs(){
+    el.crumbs.innerHTML = '';
+    const parts = [{ label: 'Мои файлы', index: -1 }, ...path.map((p, i) => ({ label: p, index: i }))];
+    parts.forEach((p, i) => {
+      if (i > 0){
+        const sep = document.createElement('span');
+        sep.className = 'fm__crumb-sep';
+        sep.textContent = '/';
+        el.crumbs.appendChild(sep);
+      }
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'fm__crumb' + (i === parts.length - 1 ? ' is-current' : '');
+      btn.textContent = p.label;
+      btn.addEventListener('click', () => {
+        path = p.index < 0 ? [] : path.slice(0, p.index + 1);
+        resetSearch();
+        load();
+      });
+      el.crumbs.appendChild(btn);
+    });
+    el.up.disabled = path.length === 0;
+    el.up.style.opacity = path.length === 0 ? '.4' : '1';
+  }
+
+  function resetSearch(){ query = ''; el.search.value = ''; }
+
+  function sortEntries(list){
+    const folders = list.filter(x => x.id === null);
+    const files = list.filter(x => x.id !== null);
+    const byName = (a, b) => a.name.localeCompare(b.name, 'ru');
+    const time = x => new Date(x.created_at || x.updated_at || 0).getTime();
+
+    folders.sort(byName);
+    if (sortMode === 'name') files.sort(byName);
+    else if (sortMode === 'old') files.sort((a, b) => time(a) - time(b));
+    else if (sortMode === 'size') files.sort((a, b) => (b.metadata?.size || 0) - (a.metadata?.size || 0));
+    else files.sort((a, b) => time(b) - time(a));
+
+    return [...folders, ...files];
+  }
+
+  function makeIconBtn(label, title, cls, onClick){
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'fm__icon-btn' + (cls ? ' ' + cls : '');
+    b.textContent = label;
+    b.title = title;
+    b.addEventListener('click', (e) => { e.stopPropagation(); onClick(); });
+    return b;
+  }
+
+  function renderBody(){
+    const list = sortEntries(entries.filter(x => !query || x.name.toLowerCase().includes(query)));
+    previewList = list.filter(x => x.id !== null);
+    el.body.innerHTML = '';
+
+    if (list.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'fm__empty';
+      empty.innerHTML = query
+        ? '<b>Ничего не нашлось</b>Попробуй другое слово или очисти поиск.'
+        : '<b>Папка пустая</b>Перетащи сюда фото или текстовый файл — или нажми «Загрузить».';
+      el.body.appendChild(empty);
+      updateStat();
       return;
     }
 
-    data.forEach(f => {
-      const li = document.createElement('li');
-      li.className = 'item-list__item';
-      li.innerHTML = `
-        <span class="item-list__text"></span>
-        <span style="color:var(--muted); font-size:12px;"></span>
-        <button class="item-list__del" data-action="download" title="Скачать">↓</button>
-        <button class="item-list__del" data-action="delete" title="Удалить">✕</button>
-      `;
-      const spans = li.querySelectorAll('span');
-      spans[0].textContent = f.name;
-      spans[1].textContent = fmtSize(f.metadata?.size);
-
-      li.querySelector('[data-action="download"]').addEventListener('click', async () => {
-        const { data: signed, error: signErr } = await supabase.storage
-          .from(FILES_BUCKET)
-          .createSignedUrl(`${folder}/${f.name}`, 60);
-        if (signErr) { console.error(signErr); return; }
-        window.open(signed.signedUrl, '_blank');
-      });
-      li.querySelector('[data-action="delete"]').addEventListener('click', async () => {
-        await supabase.storage.from(FILES_BUCKET).remove([`${folder}/${f.name}`]);
-        render();
-      });
-      list.appendChild(li);
-    });
-    document.getElementById('stat-files').textContent = data.length;
+    if (viewMode === 'grid') renderGrid(list); else renderList(list);
+    loadThumbs(list);
+    updateStat();
   }
 
-  form.onsubmit = async (e) => {
-    e.preventDefault();
-    const file = input.files[0];
-    if (!file) return;
-    status.hidden = false;
-    status.textContent = 'Загрузка…';
-    const { error } = await supabase.storage
-      .from(FILES_BUCKET)
-      .upload(`${folder}/${file.name}`, file, { upsert: true });
-    input.value = '';
-    if (error) {
-      status.textContent = 'Ошибка загрузки: ' + error.message;
-    } else {
-      status.hidden = true;
-      render();
-    }
-  };
+  function renderGrid(list){
+    const grid = document.createElement('div');
+    grid.className = 'fm__grid';
 
-  render();
-}
+    list.forEach(item => {
+      const isFolder = item.id === null;
+      const tile = document.createElement('div');
+      tile.className = 'fm__tile' + (isFolder ? ' fm__tile--folder' : '');
+      tile.tabIndex = 0;
+      tile.title = item.name;
+
+      const thumb = document.createElement('div');
+      thumb.className = 'fm__thumb';
+      thumb.dataset.name = item.name;
+      if (isFolder){
+        const mark = document.createElement('div');
+        mark.className = 'fm__folder-mark';
+        thumb.appendChild(mark);
+      } else {
+        const tag = document.createElement('span');
+        tag.className = 'fm__ext';
+        tag.textContent = ext(item.name).toUpperCase() || 'ФАЙЛ';
+        thumb.appendChild(tag);
+      }
+
+      const name = document.createElement('div');
+      name.className = 'fm__name';
+      name.textContent = item.name;
+
+      const meta = document.createElement('div');
+      meta.className = 'fm__meta';
+      meta.textContent = isFolder
+        ? 'папка'
+        : [fmtSize(item.metadata?.size), fmtDate(item.created_at)].filter(Boolean).join(' · ');
+
+      const actions = document.createElement('div');
+      actions.className = 'fm__tile-actions';
+      if (!isFolder) actions.appendChild(makeIconBtn('↓', 'Скачать', '', () => download(item.name)));
+      actions.appendChild(makeIconBtn('✎', 'Переименовать', '', () => rename(item)));
+      actions.appendChild(makeIconBtn('✕', 'Удалить', 'fm__icon-btn--danger', () => remove(item)));
+
+      tile.append(thumb, name, meta, actions);
+      tile.addEventListener('click', () => open(item));
+      tile.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(item); }
+      });
+      grid.appendChild(tile);
+    });
+
+    el.body.appendChild(grid);
+  }
+
+  function renderList(list){
+    const wrap = document.createElement('div');
+    wrap.className = 'fm__rows';
+
+    list.forEach(item => {
+      const isFolder = item.id === null;
+      const row = document.createElement('div');
+      row.className = 'fm__row';
+      row.tabIndex = 0;
+
+      const ico = document.createElement('div');
+      ico.className = 'fm__row-ico';
+      ico.dataset.name = item.name;
+      ico.textContent = isFolder ? '▣' : (ext(item.name).toUpperCase().slice(0, 3) || '•');
+
+      const nm = document.createElement('div');
+      nm.className = 'fm__row-name';
+      nm.textContent = item.name;
+
+      const size = document.createElement('div');
+      size.className = 'fm__row-meta';
+      size.textContent = isFolder ? 'папка' : fmtSize(item.metadata?.size);
+
+      const date = document.createElement('div');
+      date.className = 'fm__row-meta';
+      date.textContent = isFolder ? '' : fmtDate(item.created_at);
+
+      const acts = document.createElement('div');
+      acts.className = 'fm__tile-actions';
+      acts.style.position = 'static';
+      acts.style.opacity = '1';
+      if (!isFolder) acts.appendChild(makeIconBtn('↓', 'Скачать', '', () => download(item.name)));
+      acts.appendChild(makeIconBtn('✎', 'Переименовать', '', () => rename(item)));
+      acts.appendChild(makeIconBtn('✕', 'Удалить', 'fm__icon-btn--danger', () => remove(item)));
+
+      row.append(ico, nm, size, date, acts);
+      row.addEventListener('click', () => open(item));
+      row.addEventListener('keydown', (e) => { if (e.key === 'Enter') open(item); });
+      wrap.appendChild(row);
+    });
+
+    el.body.appendChild(wrap);
+  }
+
+  // миниатюры картинок
+  async function loadThumbs(list){
+    const images = list.filter(x => x.id !== null && kind(x.name) === 'image');
+    if (images.length === 0) return;
+    const paths = images.map(x => `${fullPath()}/${x.name}`);
+    const { data, error } = await supabase.storage.from(FILES_BUCKET).createSignedUrls(paths, 3600);
+    if (error) { console.error('thumbs', error); return; }
+    data.forEach((row, i) => {
+      if (!row.signedUrl) return;
+      const name = images[i].name;
+      el.body.querySelectorAll(`[data-name="${CSS.escape(name)}"]`).forEach(box => {
+        box.innerHTML = '';
+        const img = document.createElement('img');
+        img.src = row.signedUrl;
+        img.alt = name;
+        img.loading = 'lazy';
+        box.appendChild(img);
+      });
+    });
+  }
+
+  function updateStat(){
+    const files = entries.filter(x => x.id !== null);
+    const folders = entries.length - files.length;
+    const stat = document.getElementById('stat-files');
+    if (stat) stat.textContent = files.length;
+    const bytes = files.reduce((s, f) => s + (f.metadata?.size || 0), 0);
+    el.count.textContent = `${folders} папок · ${files.length} файлов · ${fmtSize(bytes)}`;
+  }
+
+  // ---------- действия ----------
+  function open(item){
+    if (item.id === null){
+      path.push(item.name);
+      resetSearch();
+      load();
+      return;
+    }
+    previewIndex = previewList.findIndex(x => x.name === item.name);
+    showViewer(item);
+  }
+
+  async function download(name){
+    try {
+      const url = await signed(name, 60);
+      window.open(url, '_blank', 'noopener');
+    } catch (e){ status('Не удалось получить ссылку: ' + e.message, true); }
+  }
+
+  async function rename(item){
+    const next = safeName(prompt('Новое имя', item.name) || '');
+    if (!next || next === item.name) return;
+    status('Переименовываю…');
+    try {
+      if (item.id === null){
+        const base = `${fullPath()}/${item.name}`;
+        const files = await collectFiles(base);
+        for (const f of files){
+          const rest = f.slice(base.length);
+          const { error } = await supabase.storage.from(FILES_BUCKET).move(f, `${fullPath()}/${next}${rest}`);
+          if (error) throw error;
+        }
+      } else {
+        const { error } = await supabase.storage.from(FILES_BUCKET)
+          .move(`${fullPath()}/${item.name}`, `${fullPath()}/${next}`);
+        if (error) throw error;
+      }
+      status('');
+      load();
+    } catch (e){ status('Переименовать не вышло: ' + e.message, true); }
+  }
+
+  async function remove(item){
+    const isFolder = item.id === null;
+    const ok = confirm(isFolder
+      ? `Удалить папку «${item.name}» со всем содержимым?`
+      : `Удалить «${item.name}»?`);
+    if (!ok) return;
+    status('Удаляю…');
+    try {
+      const targets = isFolder
+        ? await collectFiles(`${fullPath()}/${item.name}`)
+        : [`${fullPath()}/${item.name}`];
+      if (targets.length){
+        const { error } = await supabase.storage.from(FILES_BUCKET).remove(targets);
+        if (error) throw error;
+      }
+      status('');
+      load();
+    } catch (e){ status('Удалить не вышло: ' + e.message, true); }
+  }
+
+  async function createFolder(){
+    const name = safeName(prompt('Название папки', 'Новая папка') || '');
+    if (!name) return;
+    status('Создаю папку…');
+    try {
+      const { error } = await supabase.storage.from(FILES_BUCKET)
+        .upload(`${fullPath()}/${name}/${PLACEHOLDER}`, new Blob([''], { type: 'text/plain' }), { upsert: true });
+      if (error) throw error;
+      status('');
+      load();
+    } catch (e){ status('Папка не создалась: ' + e.message, true); }
+  }
+
+  async function upload(fileList){
+    const files = Array.from(fileList || []);
+    if (!files.length) return;
+
+    el.progress.hidden = false;
+    let done = 0;
+    const failed = [];
+
+    for (const file of files){
+      status(`Загружаю ${done + 1} из ${files.length}: ${file.name}`);
+      const { error } = await supabase.storage.from(FILES_BUCKET)
+        .upload(`${fullPath()}/${safeName(file.name)}`, file, { upsert: true, contentType: file.type || undefined });
+      if (error) failed.push(`${file.name}: ${error.message}`);
+      done++;
+      el.progressBar.style.width = Math.round(done / files.length * 100) + '%';
+    }
+
+    el.progress.hidden = true;
+    el.progressBar.style.width = '0';
+    if (failed.length) status('Не загрузилось — ' + failed.join('; '), true);
+    else { status('Готово'); setTimeout(() => status(''), 1200); }
+    load();
+  }
+
+  // ---------- просмотр ----------
+  async function showViewer(item){
+    el.viewer.hidden = false;
+    el.viewerName.textContent = item.name;
+    el.viewerMeta.textContent = [fmtSize(item.metadata?.size), fmtDate(item.created_at)].filter(Boolean).join(' · ');
+    el.viewerBody.innerHTML = '<span style="color:var(--muted);font-size:13px;">Открываю…</span>';
+
+    const many = previewList.length > 1;
+    el.viewerPrev.hidden = !many;
+    el.viewerNext.hidden = !many;
+
+    let url;
+    try { url = await signed(item.name, 3600); }
+    catch (e){ el.viewerBody.textContent = 'Не удалось открыть: ' + e.message; return; }
+
+    el.viewerDownload.onclick = () => window.open(url, '_blank', 'noopener');
+
+    const k = kind(item.name);
+    el.viewerBody.innerHTML = '';
+
+    if (k === 'image'){
+      const img = document.createElement('img');
+      img.src = url; img.alt = item.name;
+      el.viewerBody.appendChild(img);
+    } else if (k === 'text'){
+      const pre = document.createElement('pre');
+      pre.className = 'viewer__text';
+      pre.textContent = 'Читаю файл…';
+      el.viewerBody.appendChild(pre);
+      try {
+        const res = await fetch(url);
+        const text = await res.text();
+        pre.textContent = text.length ? text : '(пусто)';
+      } catch (e){ pre.textContent = 'Не удалось прочитать файл: ' + e.message; }
+    } else if (k === 'video'){
+      const v = document.createElement('video');
+      v.src = url; v.controls = true;
+      el.viewerBody.appendChild(v);
+    } else if (k === 'audio'){
+      const a = document.createElement('audio');
+      a.src = url; a.controls = true;
+      el.viewerBody.appendChild(a);
+    } else if (k === 'pdf'){
+      const f = document.createElement('iframe');
+      f.src = url;
+      el.viewerBody.appendChild(f);
+    } else {
+      const p = document.createElement('p');
+      p.style.color = 'var(--muted)';
+      p.style.fontSize = '13px';
+      p.textContent = 'Такой тип файла панель не показывает — нажми ↓, чтобы скачать.';
+      el.viewerBody.appendChild(p);
+    }
+  }
+
+  function step(delta){
+    if (previewList.length < 2) return;
+    previewIndex = (previewIndex + delta + previewList.length) % previewList.length;
+    showViewer(previewList[previewIndex]);
+  }
+
+  function closeViewer(){
+    el.viewer.hidden = true;
+    el.viewerBody.innerHTML = '';
+  }
+
+  // ---------- чтение папки ----------
+  async function load(){
+    renderCrumbs();
+    el.body.innerHTML = '<div class="fm__empty">Загружаю…</div>';
+    try {
+      entries = await listDir(fullPath());
+      renderBody();
+    } catch (e){
+      el.body.innerHTML = '';
+      status('Не получилось прочитать хранилище: ' + e.message, true);
+    }
+  }
+
+  // ---------- монтаж ----------
+  function mount(){
+    el.win         = document.querySelector('.window[data-window="files"]');
+    el.crumbs      = document.getElementById('fm-crumbs');
+    el.up          = document.getElementById('fm-up');
+    el.body        = document.getElementById('fm-body');
+    el.search      = document.getElementById('fm-search');
+    el.sort        = document.getElementById('fm-sort');
+    el.status      = document.getElementById('fm-status');
+    el.count       = document.getElementById('fm-count');
+    el.progress    = document.getElementById('fm-progress');
+    el.progressBar = document.getElementById('fm-progress-bar');
+    el.fileInput   = document.getElementById('fm-file-input');
+    el.viewer      = document.getElementById('viewer');
+    el.viewerName  = document.getElementById('viewer-name');
+    el.viewerMeta  = document.getElementById('viewer-meta');
+    el.viewerBody  = document.getElementById('viewer-body');
+    el.viewerPrev  = document.getElementById('viewer-prev');
+    el.viewerNext  = document.getElementById('viewer-next');
+    el.viewerDownload = document.getElementById('viewer-download');
+
+    const gridBtn = document.getElementById('fm-view-grid');
+    const listBtn = document.getElementById('fm-view-list');
+    function setView(mode){
+      viewMode = mode;
+      localStorage.setItem('kuufa-fm-view', mode);
+      gridBtn.classList.toggle('is-active', mode === 'grid');
+      listBtn.classList.toggle('is-active', mode === 'list');
+      renderBody();
+    }
+    gridBtn.addEventListener('click', () => setView('grid'));
+    listBtn.addEventListener('click', () => setView('list'));
+    setView(viewMode);
+
+    el.up.addEventListener('click', () => {
+      if (!path.length) return;
+      path.pop();
+      resetSearch();
+      load();
+    });
+
+    el.search.addEventListener('input', () => { query = el.search.value.trim().toLowerCase(); renderBody(); });
+    el.sort.addEventListener('change', () => { sortMode = el.sort.value; renderBody(); });
+
+    document.getElementById('fm-new-folder').addEventListener('click', createFolder);
+    document.getElementById('fm-upload-btn').addEventListener('click', () => el.fileInput.click());
+    el.fileInput.addEventListener('change', () => { upload(el.fileInput.files); el.fileInput.value = ''; });
+
+    // перетаскивание файлов в окно
+    let dragDepth = 0;
+    el.win.addEventListener('dragenter', (e) => { e.preventDefault(); dragDepth++; el.win.classList.add('is-dropzone'); });
+    el.win.addEventListener('dragover', (e) => e.preventDefault());
+    el.win.addEventListener('dragleave', () => { if (--dragDepth <= 0){ dragDepth = 0; el.win.classList.remove('is-dropzone'); } });
+    el.win.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dragDepth = 0;
+      el.win.classList.remove('is-dropzone');
+      upload(e.dataTransfer.files);
+    });
+
+    // просмотр
+    document.getElementById('viewer-close').addEventListener('click', closeViewer);
+    el.viewer.addEventListener('click', (e) => { if (e.target === el.viewer) closeViewer(); });
+    el.viewerPrev.addEventListener('click', () => step(-1));
+    el.viewerNext.addEventListener('click', () => step(1));
+    document.addEventListener('keydown', (e) => {
+      if (el.viewer.hidden) return;
+      if (e.key === 'Escape') closeViewer();
+      if (e.key === 'ArrowLeft') step(-1);
+      if (e.key === 'ArrowRight') step(1);
+    });
+
+    load();
+  }
+
+  return { mount, reload: load };
+})();
 
 // =========================================================
 // Оконный менеджер (в стиле Windows 7)

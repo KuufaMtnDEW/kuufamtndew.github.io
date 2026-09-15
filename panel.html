@@ -167,7 +167,7 @@
     </div>
 
     <!-- ---- окно: Файлы ---- -->
-    <div class="window" data-window="files" style="top:160px; left:460px; width:460px; height:460px;" hidden>
+    <div class="window" data-window="files" style="top:110px; left:380px; width:720px; height:520px;" hidden>
       <div class="window__titlebar" data-drag-handle>
         <span class="window__ico" data-ico="files"></span>
         <span class="window__title">Файлы</span>
@@ -177,17 +177,37 @@
           <button class="window__ctrl window__ctrl--close" data-action="close" aria-label="Закрыть">&times;</button>
         </div>
       </div>
-      <div class="window__body">
-        <p class="view__sub">Хранилище Supabase Storage — видно и доступно только тебе.</p>
-        <form id="file-form" class="inline-form">
-          <input type="file" id="file-input" required>
-          <button type="submit" class="btn-accent-panel">Загрузить</button>
-        </form>
-        <p id="file-upload-status" class="login-card__error" hidden style="color:var(--muted); text-align:left; margin:0 0 14px;"></p>
-        <ul id="file-list" class="item-list">
-          <li class="item-list__empty">Файлов пока нет</li>
-        </ul>
+
+      <div class="fm__bar">
+        <button type="button" id="fm-up" class="fm__btn fm__btn--icon" title="На уровень выше">↑</button>
+        <div class="fm__crumbs" id="fm-crumbs"></div>
+        <input type="search" id="fm-search" class="fm__search" placeholder="Поиск">
+        <select id="fm-sort" class="fm__select" aria-label="Сортировка">
+          <option value="new">Сначала новые</option>
+          <option value="old">Сначала старые</option>
+          <option value="name">По имени</option>
+          <option value="size">По размеру</option>
+        </select>
+        <div class="fm__toggle" role="group" aria-label="Вид">
+          <button type="button" id="fm-view-grid" class="is-active" title="Плитка">▦</button>
+          <button type="button" id="fm-view-list" title="Список">☰</button>
+        </div>
+        <button type="button" id="fm-new-folder" class="fm__btn">Новая папка</button>
+        <button type="button" id="fm-upload-btn" class="fm__btn fm__btn--accent">Загрузить</button>
+        <input type="file" id="fm-file-input" multiple hidden>
       </div>
+
+      <div class="window__body window__body--flush" id="fm">
+        <div class="fm__progress" id="fm-progress" hidden><span id="fm-progress-bar"></span></div>
+        <p class="fm__status" id="fm-status" hidden></p>
+        <div id="fm-body"></div>
+      </div>
+
+      <div class="fm__statusbar">
+        <span id="fm-count">—</span>
+        <span id="fm-hint">Перетащи файлы в окно, чтобы загрузить</span>
+      </div>
+
       <div class="window__resize" data-resize-handle></div>
     </div>
 
@@ -252,6 +272,24 @@
     </div>
   </div>
 
+</div>
+
+<!-- ============ ПРОСМОТР ФАЙЛА ============ -->
+<div id="viewer" class="viewer" hidden>
+  <div class="viewer__win">
+    <div class="viewer__titlebar">
+      <span class="window__ico"></span>
+      <span class="viewer__name" id="viewer-name">—</span>
+      <span class="viewer__meta" id="viewer-meta"></span>
+      <div class="window__controls">
+        <button class="window__ctrl" id="viewer-download" title="Скачать">↓</button>
+        <button class="window__ctrl window__ctrl--close" id="viewer-close" title="Закрыть">&times;</button>
+      </div>
+    </div>
+    <div class="viewer__body" id="viewer-body"></div>
+    <button type="button" id="viewer-prev" class="viewer__nav viewer__nav--prev" aria-label="Предыдущий">‹</button>
+    <button type="button" id="viewer-next" class="viewer__nav viewer__nav--next" aria-label="Следующий">›</button>
+  </div>
 </div>
 
 <!-- Supabase SDK (без сборки — подходит для GitHub Pages) -->
