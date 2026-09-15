@@ -57,8 +57,6 @@ async function handleSession(session){
   realtimeChannels = [];
 
   const user = session?.user || null;
-  console.log('SESSION:', session);
-  console.log('USER:', user);
 
   if (!user) {
     currentUser = null;
@@ -80,6 +78,7 @@ async function handleSession(session){
   document.getElementById('settings-email').textContent = user.email;
 
   showScreen('app');
+  console.log('ПЕРЕХОД В APP');
   initTasks();
   initNotes();
   initSeo();
